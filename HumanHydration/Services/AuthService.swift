@@ -96,7 +96,7 @@ final class AuthService: ObservableObject {
         }
 
         if let error = try? decoder.decode(AuthErrorResponse.self, from: data) {
-            throw AuthError.server(error.errorDescription ?? error.message ?? error.error ?? "Authentication failed.")
+            throw AuthError.server(error.errorDescription ?? error.message ?? error.msg ?? error.error ?? error.code ?? "Authentication failed.")
         }
         throw AuthError.server("Authentication failed. Try again.")
     }
@@ -129,6 +129,9 @@ final class AuthService: ObservableObject {
 
     private func friendlyMessage(for error: Error) -> String {
         let message = error.localizedDescription
+        if message.localizedCaseInsensitiveContains("email not confirmed") || message.localizedCaseInsensitiveContains("email_not_confirmed") {
+            return "Confirm your email from the link we sent, then try signing in again."
+        }
         if message.localizedCaseInsensitiveContains("invalid login credentials") {
             return "That email or password doesn’t look right."
         }
@@ -152,12 +155,16 @@ private struct AuthResponse: Decodable {
 private struct AuthErrorResponse: Decodable {
     let errorDescription: String?
     let message: String?
+    let msg: String?
     let error: String?
+    let code: String?
 
     enum CodingKeys: String, CodingKey {
         case errorDescription = "error_description"
         case message
+        case msg
         case error
+        case code
     }
 }
 
