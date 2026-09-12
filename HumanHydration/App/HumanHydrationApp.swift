@@ -89,9 +89,9 @@ private struct SignInView: View {
                     .autocorrectionDisabled()
                     .focused($focusedField, equals: .email)
                     .padding(.horizontal, 16)
-                    .frame(height: 52)
+                    .frame(height: 54)
                     .foregroundStyle(.white)
-                    .modifier(LiquidGlassSurface(shape: .rounded(18)))
+                    .modifier(LiquidGlassSurface(shape: .capsule))
             } else {
                 VStack(spacing: 0) {
                     Text(email)
