@@ -12,6 +12,43 @@ struct HydrationEntry: Identifiable, Codable {
     }
 }
 
+/// Goal comparisons use the current tracking goal, not a historical medical target.
+struct HydrationStatistics {
+    let entries: [HydrationEntry]
+    let goalML: Int
+    var now = Date.now
+    var calendar = Calendar.current
+
+    var dailyTotals: [Date: Int] {
+        entries.reduce(into: [:]) { result, entry in
+            guard entry.date <= now, entry.amountML > 0 else { return }
+            result[calendar.startOfDay(for: entry.date), default: 0] += entry.amountML
+        }
+    }
+    var week: [(date: Date, amount: Int)] {
+        let totals = dailyTotals
+        return (-6...0).map { offset in
+            let date = calendar.date(byAdding: .day, value: offset, to: calendar.startOfDay(for: now))!
+            return (date, totals[date, default: 0])
+        }
+    }
+    var dailyAverageML: Int { week.reduce(0) { $0 + $1.amount } / 7 }
+    var currentStreak: Int {
+        guard goalML > 0 else { return 0 }
+        let totals = dailyTotals
+        var day = calendar.startOfDay(for: now)
+        if totals[day, default: 0] < goalML {
+            day = calendar.date(byAdding: .day, value: -1, to: day)!
+        }
+        var count = 0
+        while totals[day, default: 0] >= goalML {
+            count += 1
+            day = calendar.date(byAdding: .day, value: -1, to: day)!
+        }
+        return count
+    }
+}
+
 struct WaterBottle: Identifiable, Codable {
     let id: UUID
     var name: String
@@ -19,7 +56,7 @@ struct WaterBottle: Identifiable, Codable {
     var assetName: String
     var colorName: String
 
-    init(name: String = "My bottle", capacityML: Int = 750, assetName: String = "bottle", colorName: String = "blue") {
+    init(name: String = "Smartwater", capacityML: Int = 1000, assetName: String = "bottle", colorName: String = "clear") {
         self.id = UUID()
         self.name = name
         self.capacityML = capacityML

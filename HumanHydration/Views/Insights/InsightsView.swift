@@ -1,38 +1,53 @@
 import SwiftUI
+import Charts
 
 struct InsightsView: View {
     @EnvironmentObject private var store: HydrationStore
     @State private var showingSettings = false
+    @State private var historyMetric: HydrationHistoryMetric?
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
-                    HStack { Text("Progress").font(.system(size: 38, weight: .bold)); Spacer(); Button { showingSettings = true } label: { Image(systemName: "gearshape").font(.headline).foregroundStyle(.black) } }
+                    HStack { Text("Progress").font(.system(size: 38, weight: .regular)); Spacer(); Button { showingSettings = true } label: { Image(systemName: "gearshape").font(.headline.weight(.regular)).foregroundStyle(.black) } }
                     HStack(spacing: 14) {
-                        StatCard(title: "Day streak", value: "1 day", icon: "flame.fill", color: .orange)
-                        StatCard(title: "Daily average", value: "0 ml", icon: "drop.fill", color: .blue)
-                    }
+                        Button { historyMetric = .streak } label: {
+                            StatCard(title: "Day streak", value: "\(store.currentStreak) days", icon: "flame", color: .black)
+                        }
+                        Button { historyMetric = .average } label: {
+                            StatCard(title: "Daily average", value: "\(store.dailyAverageML) ml", icon: "drop", color: .black)
+                        }
+                    }.buttonStyle(.plain)
                     VStack(alignment: .leading, spacing: 18) {
-                        HStack { Text("Hydration this week").font(.title3.bold()); Spacer(); Text("Goal: \(store.dailyGoalML) ml").font(.caption).foregroundStyle(.secondary) }
-                        HStack(alignment: .bottom, spacing: 12) {
-                            ForEach(0..<7, id: \.self) { index in
-                                let height = CGFloat(index == 6 ? max(store.todayProgress, 0.08) : 0.18 + Double(index % 3) * 0.12)
-                                VStack(spacing: 8) {
-                                    RoundedRectangle(cornerRadius: 8).fill(index == 6 ? .blue : .blue.opacity(0.18)).frame(height: 150 * height)
-                                    Text(["S", "M", "T", "W", "T", "F", "S"][index]).font(.caption).foregroundStyle(.secondary)
-                                }.frame(maxWidth: .infinity, alignment: .bottom)
+                        Text("Your last 7 days").font(.title3)
+                        Chart {
+                            ForEach(store.statistics.week, id: \.date) { day in
+                                BarMark(x: .value("Day", day.date, unit: .day), y: .value("Water (ml)", day.amount))
+                                    .foregroundStyle(Color.blue.opacity(0.45)).cornerRadius(6)
+                                    .accessibilityLabel(day.date.formatted(date: .abbreviated, time: .omitted))
+                                    .accessibilityValue("\(day.amount) milliliters")
                             }
-                        }.frame(height: 190, alignment: .bottom)
+                            RuleMark(y: .value("Current goal", store.dailyGoalML))
+                                .lineStyle(StrokeStyle(lineWidth: 1, dash: [4])).foregroundStyle(.secondary)
+                        }
+                        .chartXAxis { AxisMarks(values: .stride(by: .day)) { _ in AxisValueLabel(format: .dateTime.weekday(.narrow)) } }
+                        .frame(height: 200)
+                        Text("Dashed line: your current \(store.dailyGoalML) ml goal. Average includes days without logs.")
+                            .font(.caption).foregroundStyle(.secondary)
+                        if store.statistics.week.allSatisfy({ $0.amount == 0 }) {
+                            Text("Your first water log will start your chart.").font(.subheadline).foregroundStyle(.secondary)
+                        }
                     }.padding(22).modifier(LiquidGlassSurface(shape: .rounded(28)))
                 }.padding()
             }.navigationBarTitleDisplayMode(.inline)
                 .background(HydrationTheme.canvas.ignoresSafeArea())
                 .sheet(isPresented: $showingSettings) { SettingsView() }
+                .sheet(item: $historyMetric) { HydrationHistorySheet(metric: $0) }
         }
     }
 }
 
 private struct StatCard: View {
     let title: String; let value: String; let icon: String; let color: Color
-    var body: some View { VStack(alignment: .leading, spacing: 12) { Image(systemName: icon).foregroundStyle(color); Text(value).font(.title2.bold()); Text(title).font(.caption).foregroundStyle(.secondary) }.frame(maxWidth: .infinity, alignment: .leading).padding(18).modifier(LiquidGlassSurface(shape: .rounded(22))) }
+    var body: some View { VStack(alignment: .leading, spacing: 12) { Image(systemName: icon).foregroundStyle(color); Text(value).font(.title2.weight(.regular)); Text(title).font(.caption).foregroundStyle(.secondary) }.frame(maxWidth: .infinity, alignment: .leading).padding(18).modifier(LiquidGlassSurface(shape: .rounded(22))) }
 }

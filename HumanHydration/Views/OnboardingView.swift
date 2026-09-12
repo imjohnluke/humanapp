@@ -10,18 +10,12 @@ struct OnboardingView: View {
     @State private var name = ""
     @State private var age = 25
     @State private var height = 170
-    @State private var metricHeight = true
     @State private var workouts = 0
     @State private var goal = 2000.0
     @State private var selectedBottle: String?
-    @State private var capacity = 500.0
     @FocusState private var nameFocused: Bool
 
-    private let bottles: [(asset: String, name: String, capacity: Int)] = [
-        ("glass", "Glass", 250), ("bottle", "Water bottle", 500),
-        ("gatorade", "Sport bottle", 750), ("stanley", "Tumbler", 1000),
-        ("big", "Large bottle", 2000), ("gallon", "Gallon jug", 3785)
-    ]
+    private let bottles: [(asset: String, name: String, capacity: Int)] = BottleCatalog.options.map { ($0.0, $0.1, $0.2) }
     private let titles = ["Your name?", "Your age?", "Your height?",
                           "How often do you work out?", "Your daily goal?",
                           "What do you drink out of?"]
@@ -34,7 +28,7 @@ struct OnboardingView: View {
                     VStack(spacing: 22) {
                         Spacer(minLength: 24)
                         Text(titles[step])
-                            .font(.title2.weight(.medium))
+                            .font(.title2.weight(.regular))
                         stepContent
                         Spacer(minLength: 24)
                     }
@@ -49,24 +43,13 @@ struct OnboardingView: View {
                 VStack(spacing: 12) {
                     Button(action: advance) {
                         Text(step == 5 ? "Let’s go" : "Continue")
-                            .font(.headline)
+                            .font(.headline.weight(.regular))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.black)
                     .disabled(step == 0 && name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    HStack {
-                        if step > 0 {
-                            Button("Back") {
-                                nameFocused = false
-                                step -= 1
-                            }
-                        }
-                        Spacer()
-                        Text("\(step + 1) of 6").foregroundStyle(.secondary)
-                    }
-                    .font(.caption)
                 }
                 .frame(maxWidth: 460)
                 .padding(.horizontal, 28)
@@ -104,28 +87,15 @@ struct OnboardingView: View {
             .pickerStyle(.wheel)
             .frame(height: 180)
         case 2:
-            Picker("Height units", selection: $metricHeight) {
-                Text("cm").tag(true)
-                Text("ft / in").tag(false)
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 180)
-            if metricHeight {
-                Picker("Height in centimeters", selection: $height) {
-                    ForEach(80...240, id: \.self) { Text("\($0) cm").tag($0) }
+            Picker("Height in feet and inches", selection: Binding(
+                get: { Int((Double(height) / 2.54).rounded()) },
+                set: { height = Int((Double($0) * 2.54).rounded()) }
+            )) {
+                ForEach(31...95, id: \.self) { inches in
+                    Text("\(inches / 12) ft \(inches % 12) in").tag(inches)
                 }
-                .pickerStyle(.wheel).frame(height: 180)
-            } else {
-                Picker("Height in feet and inches", selection: Binding(
-                    get: { Int((Double(height) / 2.54).rounded()) },
-                    set: { height = Int((Double($0) * 2.54).rounded()) }
-                )) {
-                    ForEach(31...95, id: \.self) { inches in
-                        Text("\(inches / 12) ft \(inches % 12) in").tag(inches)
-                    }
-                }
-                .pickerStyle(.wheel).frame(height: 180)
             }
+            .pickerStyle(.wheel).frame(height: 180)
         case 3:
             Text("How many days in a typical week?")
                 .font(.subheadline).foregroundStyle(.secondary)
@@ -137,7 +107,7 @@ struct OnboardingView: View {
             Text(age >= 18 ? "Recommended starting point" : "Choose a goal with a parent or clinician")
                 .font(.subheadline).foregroundStyle(.secondary)
             Text("\(Int(goal)) ml")
-                .font(.system(size: 38, weight: .medium, design: .rounded))
+                .font(.system(size: 38, weight: .regular, design: .rounded))
                 .monospacedDigit()
             Slider(value: $goal, in: 500...5000, step: 100)
                 .tint(.black)
@@ -162,7 +132,6 @@ struct OnboardingView: View {
                 ForEach(bottles, id: \.asset) { bottle in
                     Button {
                         selectedBottle = bottle.asset
-                        capacity = Double(bottle.capacity)
                     } label: {
                         VStack(spacing: 8) {
                             DrinkIcon(name: bottle.asset).frame(height: 92)
@@ -177,12 +146,6 @@ struct OnboardingView: View {
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(selectedBottle == bottle.asset ? .isSelected : [])
                 }
-            }
-            if selectedBottle != nil {
-                Stepper("Capacity: \(Int(capacity)) ml", value: $capacity, in: 50...7570, step: 50)
-                    .font(.subheadline)
-                Text("Check your container’s capacity — these are starting sizes.")
-                    .font(.caption).foregroundStyle(.secondary)
             }
             Button("I use different ones") { selectedBottle = nil }
                 .font(.subheadline)
@@ -203,9 +166,9 @@ struct OnboardingView: View {
         savedWorkouts = workouts
         store.dailyGoalML = Int(goal)
         if let bottle = bottles.first(where: { $0.asset == selectedBottle }) {
-            store.bottle = WaterBottle(name: bottle.name, capacityML: Int(capacity),
+            store.bottle = WaterBottle(name: bottle.name, capacityML: bottle.capacity,
                                       assetName: bottle.asset,
-                                      colorName: ["stanley", "big"].contains(bottle.asset) ? "pink" : "white")
+                                      colorName: BottleCatalog.startingColor(bottle.asset))
         } else {
             store.bottle = nil
         }

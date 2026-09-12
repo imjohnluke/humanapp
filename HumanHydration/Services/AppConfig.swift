@@ -1,6 +1,7 @@
 import Foundation
 
 enum AppConfig {
+    static let emailRedirectURL = URL(string: "humanhydration://email-confirmed")!
     static let supabaseURL = URL(string: "https://vcjklnjczsgyxllgehin.supabase.co")!
 
     // This is Supabase's publishable client key. It is safe to include in an iOS app;
