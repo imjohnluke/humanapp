@@ -312,22 +312,23 @@ private struct OnboardingView: View {
     var body: some View {
         ZStack {
             HydrationTheme.canvas.ignoresSafeArea()
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(spacing: 24) {
                 Spacer()
                 if step == 0 {
-                    Text("What should we call you?").font(.largeTitle.bold())
-                    Text("Your name will appear on your Human profile.").font(.title3).foregroundStyle(.secondary)
+                    Text("Your name?").font(.title2.weight(.medium))
+                    Text("What should we call you?").font(.subheadline).foregroundStyle(.secondary)
                     TextField("Your name", text: $name)
                         .textContentType(.name)
+                        .multilineTextAlignment(.center)
                         .padding(.horizontal, 18)
                         .frame(height: 56)
                         .modifier(LiquidGlassSurface(shape: .rounded(20)))
                 } else {
-                    Text("Let’s set your goal").font(.largeTitle.bold())
-                    Text("Choose a daily target that feels right for you. You can change it anytime.").font(.title3).foregroundStyle(.secondary)
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("Daily hydration goal").font(.headline)
-                        Text("\(Int(goal)) ml").font(.system(size: 42, weight: .bold, design: .rounded)).foregroundStyle(.blue)
+                    Text("Your daily goal?").font(.title2.weight(.medium))
+                    Text("Choose what feels right. You can change it anytime.").font(.subheadline).foregroundStyle(.secondary)
+                    VStack(spacing: 10) {
+                        Text("Daily hydration goal").font(.subheadline)
+                        Text("\(Int(goal)) ml").font(.system(size: 34, weight: .medium, design: .rounded)).foregroundStyle(.blue)
                         Slider(value: $goal, in: 1000...5000, step: 100).tint(.blue)
                     }.padding(22).modifier(LiquidGlassSurface(shape: .rounded(24)))
                 }
@@ -347,7 +348,9 @@ private struct OnboardingView: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(.black)
-            }.padding(28)
+            }
+            .multilineTextAlignment(.center)
+            .padding(28)
         }
     }
 }
