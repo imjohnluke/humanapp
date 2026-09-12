@@ -303,57 +303,6 @@ struct BundledImage: View {
     }
 }
 
-private struct OnboardingView: View {
-    @EnvironmentObject private var store: HydrationStore
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    @State private var step = 0
-    @State private var name = ""
-    @State private var goal: Double = 2400
-    var body: some View {
-        ZStack {
-            HydrationTheme.canvas.ignoresSafeArea()
-            VStack(spacing: 24) {
-                Spacer()
-                if step == 0 {
-                    Text("Your name?").font(.title2.weight(.medium))
-                    Text("What should we call you?").font(.subheadline).foregroundStyle(.secondary)
-                    TextField("Your name", text: $name)
-                        .textContentType(.name)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 18)
-                        .frame(height: 56)
-                        .modifier(LiquidGlassSurface(shape: .rounded(20)))
-                } else {
-                    Text("Your daily goal?").font(.title2.weight(.medium))
-                    Text("Choose what feels right. You can change it anytime.").font(.subheadline).foregroundStyle(.secondary)
-                    VStack(spacing: 10) {
-                        Text("Daily hydration goal").font(.subheadline)
-                        Text("\(Int(goal)) ml").font(.system(size: 34, weight: .medium, design: .rounded)).foregroundStyle(.blue)
-                        Slider(value: $goal, in: 1000...5000, step: 100).tint(.blue)
-                    }.padding(22).modifier(LiquidGlassSurface(shape: .rounded(24)))
-                }
-                Spacer()
-                Button {
-                    if step == 0 {
-                        let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                        guard !cleanName.isEmpty else { return }
-                        store.displayName = cleanName
-                        withAnimation(.easeInOut(duration: 0.25)) { step = 1 }
-                    } else {
-                        store.dailyGoalML = Int(goal)
-                        hasCompletedOnboarding = true
-                    }
-                } label: {
-                    Text("Continue").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 16)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(.black)
-            }
-            .multilineTextAlignment(.center)
-            .padding(28)
-        }
-    }
-}
 
 struct RootView: View {
     @State private var showingAddWater = false

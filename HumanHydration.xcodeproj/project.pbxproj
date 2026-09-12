@@ -28,6 +28,7 @@
 		DAE3302A74CA38091CD9B6D1 /* stanley.png in Resources */ = {isa = PBXBuildFile; fileRef = 79BBFE2FF6E76337742E94D7 /* stanley.png */; };
 		E6F9176D2A1EFA8E1E1A7568 /* gallon.png in Resources */ = {isa = PBXBuildFile; fileRef = 83658110CF12859458B9395E /* gallon.png */; };
 		EC1C48C2B6A9701D0983DC9F /* gatorade.png in Resources */ = {isa = PBXBuildFile; fileRef = 843189EC3643B125B0CB0FAF /* gatorade.png */; };
+		F2229A0F03AEF1991390BB6F /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22E9C47FB9369332F3F23B4F /* OnboardingView.swift */; };
 		F4454B0666AC783CF6BD7B81 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DD7303E4F24AB6F0DEACCA4 /* HistoryView.swift */; };
 /* End PBXBuildFile section */
 
@@ -35,6 +36,7 @@
 		0733B32270ECAAA2FCFCD4FA /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
 		07AB0FA81ACB1071515799CE /* login-background.mp4 */ = {isa = PBXFileReference; path = "login-background.mp4"; sourceTree = "<group>"; };
 		1DD7303E4F24AB6F0DEACCA4 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		22E9C47FB9369332F3F23B4F /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		289300CD14639130D1169719 /* bottle.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = bottle.png; sourceTree = "<group>"; };
 		338D6CDCEB5AD6C028BDAF48 /* HydrationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HydrationStore.swift; sourceTree = "<group>"; };
 		4B3C27D30FCA7499548DD473 /* big.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = big.png; sourceTree = "<group>"; };
@@ -98,6 +100,7 @@
 		59F7ECC48CCDF8945EB0EF9B /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				22E9C47FB9369332F3F23B4F /* OnboardingView.swift */,
 				46D9E8AB872A005EF4547653 /* History */,
 				74AC17953F8926548D1D69A6 /* Insights */,
 				AF02393F70A92A2E356A5CCA /* Profile */,
@@ -277,6 +280,7 @@
 				6B7A32CDCFCB0D342322A3A1 /* HydrationEntry.swift in Sources */,
 				CFA57712F138A704AC60413E /* HydrationStore.swift in Sources */,
 				15BC73099F53772CB68DFF26 /* InsightsView.swift in Sources */,
+				F2229A0F03AEF1991390BB6F /* OnboardingView.swift in Sources */,
 				2B555166CBD690A6F05549E5 /* ProfileView.swift in Sources */,
 				97DE41510871047D1F37734E /* ReminderService.swift in Sources */,
 				8E99DDBC64DDC2C1140B02CB /* SettingsView.swift in Sources */,
