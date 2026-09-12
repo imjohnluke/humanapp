@@ -98,7 +98,8 @@ final class AuthService: ObservableObject {
         if let error = try? decoder.decode(AuthErrorResponse.self, from: data) {
             throw AuthError.server(error.errorDescription ?? error.msg ?? error.message ?? error.errorCode ?? "Authentication failed.")
         }
-        throw AuthError.server("Authentication failed. Try again.")
+        let serverBody = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        throw AuthError.server("Authentication failed (HTTP \(httpResponse.statusCode)). \(serverBody ?? "Try again.")")
     }
 
     private func saveSession(from response: AuthResponse) {

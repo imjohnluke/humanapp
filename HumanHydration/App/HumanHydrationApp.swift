@@ -115,15 +115,23 @@ private struct SignInView: View {
             if let message = auth.errorMessage {
                 Text(message)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.92))
+                    .foregroundStyle(.black)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity)
+                    .background(.white.opacity(0.92), in: RoundedRectangle(cornerRadius: 14))
             }
 
             if let message = auth.confirmationMessage {
                 Text(message)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.92))
+                    .foregroundStyle(.black)
                     .multilineTextAlignment(.center)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .frame(maxWidth: .infinity)
+                    .background(.white.opacity(0.92), in: RoundedRectangle(cornerRadius: 14))
             }
 
             Button {
