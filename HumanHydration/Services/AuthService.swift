@@ -96,7 +96,7 @@ final class AuthService: ObservableObject {
         }
 
         if let error = try? decoder.decode(AuthErrorResponse.self, from: data) {
-            throw AuthError.server(error.errorDescription ?? error.message ?? error.msg ?? error.error ?? error.code ?? "Authentication failed.")
+            throw AuthError.server(error.errorDescription ?? error.msg ?? error.message ?? error.errorCode ?? "Authentication failed.")
         }
         throw AuthError.server("Authentication failed. Try again.")
     }
@@ -156,15 +156,13 @@ private struct AuthErrorResponse: Decodable {
     let errorDescription: String?
     let message: String?
     let msg: String?
-    let error: String?
-    let code: String?
+    let errorCode: String?
 
     enum CodingKeys: String, CodingKey {
         case errorDescription = "error_description"
         case message
         case msg
-        case error
-        case code
+        case errorCode = "error_code"
     }
 }
 
