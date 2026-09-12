@@ -81,30 +81,6 @@ private struct SignInView: View {
 
     private var emailForm: some View {
         VStack(spacing: 12) {
-            HStack {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        if emailStep == .password {
-                            emailStep = .email
-                            focusedField = .email
-                        } else {
-                            focusedField = nil
-                            auth.errorMessage = nil
-                        }
-                    }
-                } label: {
-                    Image(systemName: "chevron.left")
-                    Text("Back")
-                }
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
-                Spacer()
-            }
-
-            Text(emailStep == .email ? "Continue with email" : (emailMode == .signUp ? "Create your account" : "Welcome back"))
-                .font(.headline)
-                .foregroundStyle(.white)
-
             if emailStep == .email {
                 TextField("Email address", text: $email)
                     .textContentType(.emailAddress)
@@ -141,17 +117,6 @@ private struct SignInView: View {
                 }
                 .foregroundStyle(.white)
                 .modifier(LiquidGlassSurface(shape: .rounded(18)))
-            }
-
-            if emailStep == .email {
-                HStack(spacing: 7) {
-                    Text("New here?")
-                    Button("Sign up") { selectEmailMode(.signUp) }
-                    Text("or")
-                    Button("Sign in") { selectEmailMode(.signIn) }
-                }
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
             }
 
             if let message = auth.errorMessage {
@@ -204,6 +169,18 @@ private struct SignInView: View {
             }
             .background(.white, in: Capsule())
             .disabled(auth.isLoading)
+
+            if emailStep == .email {
+                HStack(spacing: 5) {
+                    Text(emailMode == .signUp ? "Already a member?" : "New here?")
+                    Button(emailMode == .signUp ? "Sign in" : "Sign up") {
+                        emailMode = emailMode == .signUp ? .signIn : .signUp
+                        auth.errorMessage = nil
+                    }
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white)
+            }
         }
         .onAppear { focusedField = .email }
     }
