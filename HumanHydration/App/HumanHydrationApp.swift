@@ -154,7 +154,19 @@ private struct SignInView: View {
                         } else {
                             success = await auth.signIn(email: email, password: password)
                         }
-                        if success { isSignedIn = true }
+                        if success {
+                            isSignedIn = true
+                        } else if emailMode == .signUp, auth.confirmationMessage != nil {
+                            // Supabase requires email confirmation before issuing a session.
+                            // Return to the email step so the user can switch directly to sign in.
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                emailMode = .signIn
+                                emailStep = .email
+                                password = ""
+                                passwordConfirmation = ""
+                                focusedField = .email
+                            }
+                        }
                     }
                 }
             } label: {
@@ -176,6 +188,7 @@ private struct SignInView: View {
                     Button(emailMode == .signUp ? "Sign in" : "Sign up") {
                         emailMode = emailMode == .signUp ? .signIn : .signUp
                         auth.errorMessage = nil
+                        auth.confirmationMessage = nil
                     }
                 }
                 .font(.subheadline.weight(.semibold))
