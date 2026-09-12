@@ -39,7 +39,7 @@ private struct SignInView: View {
     @State private var passwordConfirmation = ""
     @FocusState private var focusedField: EmailField?
 
-    private enum EmailStep { case email, password }
+    private enum EmailStep { case email, password, confirmation }
     private enum EmailMode { case signUp, signIn }
     private enum EmailField { case email, password, passwordConfirmation }
 
@@ -81,8 +81,9 @@ private struct SignInView: View {
 
     private var emailForm: some View {
         VStack(spacing: 12) {
-            if emailStep == .email {
-                ZStack {
+            ZStack {
+                switch emailStep {
+                case .email:
                     TextField("", text: $email, prompt: Text("Email address").foregroundStyle(.white.opacity(0.72)))
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
@@ -92,31 +93,24 @@ private struct SignInView: View {
                         .padding(.horizontal, 16)
                         .foregroundColor(.white)
                         .tint(.white)
-                }
-                .frame(height: 54)
-                .modifier(LiquidGlassSurface(shape: .capsule))
-            } else {
-                VStack(spacing: 12) {
-                    SecureField("Password", text: $password)
+                case .password:
+                    SecureField("", text: $password, prompt: Text("Password").foregroundStyle(.white.opacity(0.72)))
                         .textContentType(emailMode == .signUp ? .newPassword : .password)
                         .focused($focusedField, equals: .password)
                         .padding(.horizontal, 16)
-                        .frame(height: 54)
                         .foregroundColor(.white)
                         .tint(.white)
-                        .modifier(LiquidGlassSurface(shape: .capsule))
-                    if emailMode == .signUp {
-                        SecureField("Confirm password", text: $passwordConfirmation)
-                            .textContentType(.newPassword)
-                            .focused($focusedField, equals: .passwordConfirmation)
-                            .padding(.horizontal, 16)
-                            .frame(height: 54)
-                            .foregroundColor(.white)
-                            .tint(.white)
-                            .modifier(LiquidGlassSurface(shape: .capsule))
-                    }
+                case .confirmation:
+                    SecureField("", text: $passwordConfirmation, prompt: Text("Confirm password").foregroundStyle(.white.opacity(0.72)))
+                        .textContentType(.newPassword)
+                        .focused($focusedField, equals: .passwordConfirmation)
+                        .padding(.horizontal, 16)
+                        .foregroundColor(.white)
+                        .tint(.white)
                 }
             }
+            .frame(height: 54)
+            .modifier(LiquidGlassSurface(shape: .capsule))
 
             if let message = auth.errorMessage {
                 Text(message)
@@ -136,23 +130,30 @@ private struct SignInView: View {
                 Task {
                     if emailStep == .email {
                         selectEmailMode(emailMode)
-                    } else {
+                    } else if emailStep == .password {
                         guard password.count >= 6 else {
                             auth.errorMessage = "Your password must be at least 6 characters."
                             return
                         }
                         if emailMode == .signUp {
-                            guard password == passwordConfirmation else {
-                                auth.errorMessage = "Those passwords don’t match."
-                                return
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                emailStep = .confirmation
+                                focusedField = .passwordConfirmation
                             }
-                        }
-                        let success: Bool
-                        if emailMode == .signUp {
-                            success = await auth.signUp(email: email, password: password)
                         } else {
-                            success = await auth.signIn(email: email, password: password)
+                            let success = await auth.signIn(email: email, password: password)
+                            if success { isSignedIn = true }
                         }
+                    } else {
+                        guard passwordConfirmation.count >= 6 else {
+                            auth.errorMessage = "Your password must be at least 6 characters."
+                            return
+                        }
+                        guard password == passwordConfirmation else {
+                            auth.errorMessage = "Those passwords don’t match."
+                            return
+                        }
+                        let success = await auth.signUp(email: email, password: password)
                         if success {
                             isSignedIn = true
                         } else if emailMode == .signUp, auth.confirmationMessage != nil {
@@ -171,7 +172,7 @@ private struct SignInView: View {
             } label: {
                 HStack(spacing: 8) {
                     if auth.isLoading { ProgressView().tint(.black) }
-                    Text(emailStep == .email ? "Continue" : (emailMode == .signUp ? "Create account" : "Sign in"))
+                    Text(buttonTitle)
                 }
                 .font(.headline)
                 .foregroundStyle(.black)
@@ -210,6 +211,14 @@ private struct SignInView: View {
         withAnimation(.easeInOut(duration: 0.25)) {
             emailStep = .password
             focusedField = .password
+        }
+    }
+
+    private var buttonTitle: String {
+        switch emailStep {
+        case .email: return "Continue"
+        case .password: return emailMode == .signUp ? "Continue" : "Sign in"
+        case .confirmation: return "Create account"
         }
     }
 }
