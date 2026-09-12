@@ -13,9 +13,12 @@
 		2B555166CBD690A6F05549E5 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62D79392ED67FF19ED6A1ED6 /* ProfileView.swift */; };
 		419CC49336AD50B82AA6AC24 /* HumanHydrationApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B86F048B17780B7E92C04D6 /* HumanHydrationApp.swift */; };
 		433FEB1D58A1C7220CD9F8CA /* big.png in Resources */ = {isa = PBXBuildFile; fileRef = 4B3C27D30FCA7499548DD473 /* big.png */; };
+		5306DD535F33950141D0FDED /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83FB94DD0723E7613B467560 /* AppConfig.swift */; };
 		61D3B2E571BB22430DC22B16 /* glass.png in Resources */ = {isa = PBXBuildFile; fileRef = C11B2BEABD748E7F5A896737 /* glass.png */; };
 		6B7A32CDCFCB0D342322A3A1 /* HydrationEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = E22C8E53F07681E689AC9961 /* HydrationEntry.swift */; };
+		6B8DA4FEEA31C80D32CBD428 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A63D1850057EEAB8BC5A97C /* AuthService.swift */; };
 		8E99DDBC64DDC2C1140B02CB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728F0CDA5F9F18611E0B778D /* SettingsView.swift */; };
+		8F6C0CC80CF55C83593ED85F /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 644E3B52693AE4FF3935763A /* Supabase */; };
 		97DE41510871047D1F37734E /* ReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86B331122AA015C6072C8A4F /* ReminderService.swift */; };
 		A1BD2FAC7D706B9FD8744713 /* human-logo-wordmark.png in Resources */ = {isa = PBXBuildFile; fileRef = 93F9627E31CBE78FAB34F8A4 /* human-logo-wordmark.png */; };
 		B0F54513EFAFDBCC39561672 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB744917489A43742DFA6F21 /* TodayView.swift */; };
@@ -41,9 +44,11 @@
 		79BBFE2FF6E76337742E94D7 /* stanley.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = stanley.png; sourceTree = "<group>"; };
 		7C84038EF5909E10585C0720 /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
 		83658110CF12859458B9395E /* gallon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gallon.png; sourceTree = "<group>"; };
+		83FB94DD0723E7613B467560 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
 		843189EC3643B125B0CB0FAF /* gatorade.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gatorade.png; sourceTree = "<group>"; };
 		86B331122AA015C6072C8A4F /* ReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderService.swift; sourceTree = "<group>"; };
 		93F9627E31CBE78FAB34F8A4 /* human-logo-wordmark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "human-logo-wordmark.png"; sourceTree = "<group>"; };
+		9A63D1850057EEAB8BC5A97C /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		9B86F048B17780B7E92C04D6 /* HumanHydrationApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HumanHydrationApp.swift; sourceTree = "<group>"; };
 		AB744917489A43742DFA6F21 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
 		ACC934710712E2A3B8CD95A6 /* HumanHydration.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HumanHydration.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -52,10 +57,23 @@
 		E2B8652F835180447425E1C8 /* HumanHydration.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HumanHydration.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFrameworksBuildPhase section */
+		0580F2127EFE397382B2D46D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8F6C0CC80CF55C83593ED85F /* Supabase in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
 /* Begin PBXGroup section */
 		26803F30C55B250B285C7322 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				83FB94DD0723E7613B467560 /* AppConfig.swift */,
+				9A63D1850057EEAB8BC5A97C /* AuthService.swift */,
 				7C84038EF5909E10585C0720 /* HealthKitService.swift */,
 				338D6CDCEB5AD6C028BDAF48 /* HydrationStore.swift */,
 				86B331122AA015C6072C8A4F /* ReminderService.swift */,
@@ -193,6 +211,7 @@
 			buildPhases = (
 				10B3AACE0F8B1367D3C0B30F /* Sources */,
 				59AAB21984F2CF361BF1509A /* Resources */,
+				0580F2127EFE397382B2D46D /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -200,6 +219,7 @@
 			);
 			name = HumanHydration;
 			packageProductDependencies = (
+				644E3B52693AE4FF3935763A /* Supabase */,
 			);
 			productName = HumanHydration;
 			productReference = ACC934710712E2A3B8CD95A6 /* HumanHydration.app */;
@@ -225,6 +245,9 @@
 			);
 			mainGroup = 67F25DBEFF183EF8A76D17C3;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				9359D941E60809F04BE006BD /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4C31577D1ED1275E4FBF184C /* Products */;
 			projectDirPath = "";
@@ -259,6 +282,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5306DD535F33950141D0FDED /* AppConfig.swift in Sources */,
+				6B8DA4FEEA31C80D32CBD428 /* AuthService.swift in Sources */,
 				B4C0BAD099F594C11D89C9A8 /* HealthKitService.swift in Sources */,
 				F4454B0666AC783CF6BD7B81 /* HistoryView.swift in Sources */,
 				419CC49336AD50B82AA6AC24 /* HumanHydrationApp.swift in Sources */,
@@ -460,6 +485,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		9359D941E60809F04BE006BD /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		644E3B52693AE4FF3935763A /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9359D941E60809F04BE006BD /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B55042CC899F15DAC3DC6CB2 /* Project object */;
 }

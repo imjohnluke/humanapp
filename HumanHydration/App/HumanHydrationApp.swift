@@ -5,34 +5,48 @@ import AuthenticationServices
 @main
 struct HumanHydrationApp: App {
     @StateObject private var store = HydrationStore()
+    @StateObject private var auth = AuthService()
 
     var body: some Scene {
         WindowGroup {
             LaunchView()
                 .environmentObject(store)
+                .environmentObject(auth)
         }
     }
 }
 
 private struct LaunchView: View {
+    @EnvironmentObject private var auth: AuthService
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage("isSignedIn") private var isSignedIn = false
     var body: some View {
-        if !isSignedIn { SignInView() }
+        if !isSignedIn && !auth.isAuthenticated { SignInView() }
         else if !hasCompletedOnboarding { OnboardingView() }
         else { RootView() }
     }
 }
 
 private struct SignInView: View {
+    @EnvironmentObject private var auth: AuthService
     @AppStorage("isSignedIn") private var isSignedIn = false
     @State private var logoVisible = false
+    @State private var showingEmailForm = false
+    @State private var emailMode: EmailMode = .signUp
+    @State private var email = ""
+    @State private var password = ""
+
+    private enum EmailMode: String, CaseIterable {
+        case signUp = "Create account"
+        case signIn = "Sign in"
+    }
+
     var body: some View {
         ZStack {
             BundledImage(name: "onboarding-background")
                 .ignoresSafeArea()
                 .overlay(Color.black.opacity(0.08).ignoresSafeArea())
-            VStack(spacing: 26) {
+            VStack(spacing: 22) {
                 Spacer()
                 BundledImage(name: "human-logo-wordmark", directory: "DrinkIcons")
                     .frame(width: 190, height: 48)
@@ -54,7 +68,88 @@ private struct SignInView: View {
                     }
                     .signInWithAppleButtonStyle(.black).opacity(0.01).frame(height: 54).clipShape(Capsule())
                 }
-            }.padding(28).onAppear { withAnimation(.easeOut(duration: 0.8).delay(0.15)) { logoVisible = true } }
+
+                Button {
+                    withAnimation(.easeInOut(duration: 0.25)) { showingEmailForm.toggle() }
+                } label: {
+                    Text(showingEmailForm ? "Use Apple instead" : "Sign up with email")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                }
+
+                if showingEmailForm {
+                    emailForm
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .padding(28)
+            .onAppear { withAnimation(.easeOut(duration: 0.8).delay(0.15)) { logoVisible = true } }
+        }
+    }
+
+    private var emailForm: some View {
+        VStack(spacing: 12) {
+            Picker("Email authentication", selection: $emailMode) {
+                ForEach(EmailMode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .tint(.white)
+
+            VStack(spacing: 0) {
+                TextField("Email", text: $email)
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .padding(.horizontal, 16)
+                    .frame(height: 48)
+                Divider().overlay(.white.opacity(0.25))
+                SecureField("Password", text: $password)
+                    .textContentType(emailMode == .signUp ? .newPassword : .password)
+                    .padding(.horizontal, 16)
+                    .frame(height: 48)
+            }
+            .foregroundStyle(.white)
+            .modifier(LiquidGlassSurface(shape: .rounded(18)))
+
+            if let message = auth.errorMessage {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.92))
+                    .multilineTextAlignment(.center)
+            }
+
+            if let message = auth.confirmationMessage {
+                Text(message)
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.92))
+                    .multilineTextAlignment(.center)
+            }
+
+            Button {
+                Task {
+                    let success: Bool
+                    if emailMode == .signUp {
+                        success = await auth.signUp(email: email, password: password)
+                    } else {
+                        success = await auth.signIn(email: email, password: password)
+                    }
+                    if success { isSignedIn = true }
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    if auth.isLoading { ProgressView().tint(.black) }
+                    Text(emailMode == .signUp ? "Create account" : "Sign in")
+                }
+                .font(.headline)
+                .foregroundStyle(.black)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+            }
+            .background(.white, in: Capsule())
+            .disabled(auth.isLoading)
         }
     }
 }
