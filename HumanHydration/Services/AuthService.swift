@@ -79,7 +79,13 @@ final class AuthService: ObservableObject {
     }
 
     private func request(path: String, body: [String: String]) async throws -> AuthResponse {
-        var request = URLRequest(url: AppConfig.supabaseURL.appending(path: path))
+        var components = URLComponents(url: AppConfig.supabaseURL, resolvingAgainstBaseURL: false)!
+        let pathParts = path.split(separator: "?", maxSplits: 1, omittingEmptySubsequences: false)
+        let endpointPath = String(pathParts[0])
+        components.path = endpointPath.hasPrefix("/") ? endpointPath : "/" + endpointPath
+        components.query = pathParts.count > 1 ? String(pathParts[1]) : nil
+
+        var request = URLRequest(url: components.url!)
         request.httpMethod = "POST"
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
