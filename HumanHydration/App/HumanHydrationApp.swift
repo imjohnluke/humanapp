@@ -33,14 +33,14 @@ private struct SignInView: View {
     @AppStorage("isSignedIn") private var isSignedIn = false
     @State private var logoVisible = false
     @State private var showingEmailForm = false
-    @State private var emailMode: EmailMode = .signUp
+    @State private var emailStep: EmailStep = .email
     @State private var email = ""
     @State private var password = ""
+    @State private var passwordConfirmation = ""
+    @FocusState private var focusedField: EmailField?
 
-    private enum EmailMode: String, CaseIterable {
-        case signUp = "Create account"
-        case signIn = "Sign in"
-    }
+    private enum EmailStep { case email, password }
+    private enum EmailField { case email, password, passwordConfirmation }
 
     var body: some View {
         ZStack {
@@ -70,17 +70,21 @@ private struct SignInView: View {
                     .signInWithAppleButtonStyle(.black).opacity(0.01).frame(height: 54).clipShape(Capsule())
                 }
 
-                Button {
-                    withAnimation(.easeInOut(duration: 0.25)) { showingEmailForm.toggle() }
-                } label: {
-                    Text(showingEmailForm ? "Use Apple instead" : "Sign up with email")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
-                }
-
-                if showingEmailForm {
+                if !showingEmailForm {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            showingEmailForm = true
+                            emailStep = .email
+                            focusedField = .email
+                        }
+                    } label: {
+                        Text("Sign up with email")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                    }
+                } else {
                     emailForm
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
@@ -92,28 +96,66 @@ private struct SignInView: View {
 
     private var emailForm: some View {
         VStack(spacing: 12) {
-            Picker("Email authentication", selection: $emailMode) {
-                ForEach(EmailMode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            HStack {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        if emailStep == .password {
+                            emailStep = .email
+                            focusedField = .email
+                        } else {
+                            showingEmailForm = false
+                            focusedField = nil
+                            auth.errorMessage = nil
+                        }
+                    }
+                } label: {
+                    Image(systemName: "chevron.left")
+                    Text("Back")
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white)
+                Spacer()
             }
-            .pickerStyle(.segmented)
-            .tint(.white)
 
-            VStack(spacing: 0) {
-                TextField("Email", text: $email)
+            Text(emailStep == .email ? "Create your account" : "Choose a password")
+                .font(.headline)
+                .foregroundStyle(.white)
+
+            if emailStep == .email {
+                TextField("Email address", text: $email)
                     .textContentType(.emailAddress)
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
+                    .focused($focusedField, equals: .email)
                     .padding(.horizontal, 16)
-                    .frame(height: 48)
-                Divider().overlay(.white.opacity(0.25))
-                SecureField("Password", text: $password)
-                    .textContentType(emailMode == .signUp ? .newPassword : .password)
-                    .padding(.horizontal, 16)
-                    .frame(height: 48)
+                    .frame(height: 52)
+                    .foregroundStyle(.white)
+                    .modifier(LiquidGlassSurface(shape: .rounded(18)))
+            } else {
+                VStack(spacing: 0) {
+                    Text(email)
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.72))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 16)
+                        .frame(height: 44)
+                    Divider().overlay(.white.opacity(0.25))
+                    SecureField("Password", text: $password)
+                        .textContentType(.newPassword)
+                        .focused($focusedField, equals: .password)
+                        .padding(.horizontal, 16)
+                        .frame(height: 48)
+                    Divider().overlay(.white.opacity(0.25))
+                    SecureField("Confirm password", text: $passwordConfirmation)
+                        .textContentType(.newPassword)
+                        .focused($focusedField, equals: .passwordConfirmation)
+                        .padding(.horizontal, 16)
+                        .frame(height: 48)
+                }
+                .foregroundStyle(.white)
+                .modifier(LiquidGlassSurface(shape: .rounded(18)))
             }
-            .foregroundStyle(.white)
-            .modifier(LiquidGlassSurface(shape: .rounded(18)))
 
             if let message = auth.errorMessage {
                 Text(message)
@@ -131,18 +173,34 @@ private struct SignInView: View {
 
             Button {
                 Task {
-                    let success: Bool
-                    if emailMode == .signUp {
-                        success = await auth.signUp(email: email, password: password)
+                    if emailStep == .email {
+                        let cleanEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if cleanEmail.contains("@"), cleanEmail.contains(".") {
+                            email = cleanEmail
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                emailStep = .password
+                                focusedField = .password
+                            }
+                        } else {
+                            auth.errorMessage = "Enter a valid email address."
+                        }
                     } else {
-                        success = await auth.signIn(email: email, password: password)
+                        guard password.count >= 6 else {
+                            auth.errorMessage = "Your password must be at least 6 characters."
+                            return
+                        }
+                        guard password == passwordConfirmation else {
+                            auth.errorMessage = "Those passwords don’t match."
+                            return
+                        }
+                        let success = await auth.signUp(email: email, password: password)
+                        if success { isSignedIn = true }
                     }
-                    if success { isSignedIn = true }
                 }
             } label: {
                 HStack(spacing: 8) {
                     if auth.isLoading { ProgressView().tint(.black) }
-                    Text(emailMode == .signUp ? "Create account" : "Sign in")
+                    Text(emailStep == .email ? "Continue" : "Create account")
                 }
                 .font(.headline)
                 .foregroundStyle(.black)
@@ -152,6 +210,7 @@ private struct SignInView: View {
             .background(.white, in: Capsule())
             .disabled(auth.isLoading)
         }
+        .onAppear { focusedField = .email }
     }
 }
 
@@ -230,21 +289,47 @@ struct BundledImage: View {
 private struct OnboardingView: View {
     @EnvironmentObject private var store: HydrationStore
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @State private var step = 0
+    @State private var name = ""
     @State private var goal: Double = 2400
     var body: some View {
         ZStack {
             HydrationTheme.canvas.ignoresSafeArea()
             VStack(alignment: .leading, spacing: 24) {
                 Spacer()
-                Text("Let’s set your goal").font(.largeTitle.bold())
-                Text("Choose a daily target that feels right for you. You can change it anytime.").font(.title3).foregroundStyle(.secondary)
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Daily hydration goal").font(.headline)
-                    Text("\(Int(goal)) ml").font(.system(size: 42, weight: .bold, design: .rounded)).foregroundStyle(.blue)
-                    Slider(value: $goal, in: 1000...5000, step: 100).tint(.blue)
-                }.padding(22).modifier(LiquidGlassSurface(shape: .rounded(24)))
+                if step == 0 {
+                    Text("What should we call you?").font(.largeTitle.bold())
+                    Text("Your name will appear on your Human profile.").font(.title3).foregroundStyle(.secondary)
+                    TextField("Your name", text: $name)
+                        .textContentType(.name)
+                        .padding(.horizontal, 18)
+                        .frame(height: 56)
+                        .modifier(LiquidGlassSurface(shape: .rounded(20)))
+                } else {
+                    Text("Let’s set your goal").font(.largeTitle.bold())
+                    Text("Choose a daily target that feels right for you. You can change it anytime.").font(.title3).foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Daily hydration goal").font(.headline)
+                        Text("\(Int(goal)) ml").font(.system(size: 42, weight: .bold, design: .rounded)).foregroundStyle(.blue)
+                        Slider(value: $goal, in: 1000...5000, step: 100).tint(.blue)
+                    }.padding(22).modifier(LiquidGlassSurface(shape: .rounded(24)))
+                }
                 Spacer()
-                Button { store.dailyGoalML = Int(goal); hasCompletedOnboarding = true } label: { Text("Continue").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 16) }.buttonStyle(.borderedProminent).tint(.black)
+                Button {
+                    if step == 0 {
+                        let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard !cleanName.isEmpty else { return }
+                        store.displayName = cleanName
+                        withAnimation(.easeInOut(duration: 0.25)) { step = 1 }
+                    } else {
+                        store.dailyGoalML = Int(goal)
+                        hasCompletedOnboarding = true
+                    }
+                } label: {
+                    Text("Continue").font(.headline).frame(maxWidth: .infinity).padding(.vertical, 16)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.black)
             }.padding(28)
         }
     }

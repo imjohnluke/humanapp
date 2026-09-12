@@ -14,7 +14,7 @@ struct ProfileView: View {
                                 .overlay(Image(systemName: "person.fill").font(.system(size: 38)).foregroundStyle(.secondary))
                             Image(systemName: "pencil.circle.fill").font(.title2).foregroundStyle(.black).background(.white, in: Circle())
                         }
-                        Text("Your name").font(.title2.weight(.semibold))
+                        Text(store.displayName.isEmpty ? "Your name" : store.displayName).font(.title2.weight(.semibold))
                         Text("Hydration score").font(.subheadline).foregroundStyle(.secondary)
                         Text("\(Int(store.todayProgress * 100))").font(.system(size: 42, weight: .bold, design: .rounded))
                             .foregroundStyle(.blue)

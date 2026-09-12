@@ -1,6 +1,7 @@
 import Foundation
 
 final class HydrationStore: ObservableObject {
+    @Published var displayName: String { didSet { save() } }
     @Published var dailyGoalML: Int { didSet { save() } }
     @Published private(set) var entries: [HydrationEntry] { didSet { save() } }
     @Published var bottle: WaterBottle? { didSet { save() } }
@@ -9,6 +10,7 @@ final class HydrationStore: ObservableObject {
     private let calendar = Calendar.current
 
     init() {
+        displayName = defaults.string(forKey: "displayName") ?? ""
         dailyGoalML = defaults.object(forKey: "dailyGoalML") as? Int ?? 2400
         entries = (try? JSONDecoder().decode([HydrationEntry].self, from: defaults.data(forKey: "entries") ?? Data())) ?? []
         bottle = (try? JSONDecoder().decode(WaterBottle.self, from: defaults.data(forKey: "bottle") ?? Data()))
@@ -31,6 +33,7 @@ final class HydrationStore: ObservableObject {
     }
 
     private func save() {
+        defaults.set(displayName, forKey: "displayName")
         defaults.set(dailyGoalML, forKey: "dailyGoalML")
         defaults.set(try? JSONEncoder().encode(entries), forKey: "entries")
         if let bottle, let data = try? JSONEncoder().encode(bottle) {
