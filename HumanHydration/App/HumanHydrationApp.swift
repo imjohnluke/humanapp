@@ -194,7 +194,9 @@ private final class LoopingVideoController: ObservableObject {
     private var looper: AVPlayerLooper?
 
     init() {
-        guard let url = Bundle.main.url(forResource: "login-background", withExtension: "mp4", subdirectory: "DrinkIcons") else {
+        // Xcode copies resources into the app bundle root even when they live in
+        // a source folder, so look up the bundled file without a subdirectory.
+        guard let url = Bundle.main.url(forResource: "login-background", withExtension: "mp4") else {
             return
         }
 
