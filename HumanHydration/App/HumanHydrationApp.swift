@@ -32,14 +32,15 @@ private struct SignInView: View {
     @EnvironmentObject private var auth: AuthService
     @AppStorage("isSignedIn") private var isSignedIn = false
     @State private var logoVisible = false
-    @State private var showingEmailForm = false
     @State private var emailStep: EmailStep = .email
+    @State private var emailMode: EmailMode = .signUp
     @State private var email = ""
     @State private var password = ""
     @State private var passwordConfirmation = ""
     @FocusState private var focusedField: EmailField?
 
     private enum EmailStep { case email, password }
+    private enum EmailMode { case signUp, signIn }
     private enum EmailField { case email, password, passwordConfirmation }
 
     var body: some View {
@@ -70,24 +71,8 @@ private struct SignInView: View {
                     .signInWithAppleButtonStyle(.black).opacity(0.01).frame(height: 54).clipShape(Capsule())
                 }
 
-                if !showingEmailForm {
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            showingEmailForm = true
-                            emailStep = .email
-                            focusedField = .email
-                        }
-                    } label: {
-                        Text("Sign up with email")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
-                    }
-                } else {
-                    emailForm
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
+                emailForm
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
             .padding(28)
             .onAppear { withAnimation(.easeOut(duration: 0.8).delay(0.15)) { logoVisible = true } }
@@ -103,7 +88,6 @@ private struct SignInView: View {
                             emailStep = .email
                             focusedField = .email
                         } else {
-                            showingEmailForm = false
                             focusedField = nil
                             auth.errorMessage = nil
                         }
@@ -117,7 +101,7 @@ private struct SignInView: View {
                 Spacer()
             }
 
-            Text(emailStep == .email ? "Create your account" : "Choose a password")
+            Text(emailStep == .email ? "Continue with email" : (emailMode == .signUp ? "Create your account" : "Welcome back"))
                 .font(.headline)
                 .foregroundStyle(.white)
 
@@ -142,19 +126,32 @@ private struct SignInView: View {
                         .frame(height: 44)
                     Divider().overlay(.white.opacity(0.25))
                     SecureField("Password", text: $password)
-                        .textContentType(.newPassword)
+                        .textContentType(emailMode == .signUp ? .newPassword : .password)
                         .focused($focusedField, equals: .password)
                         .padding(.horizontal, 16)
                         .frame(height: 48)
-                    Divider().overlay(.white.opacity(0.25))
-                    SecureField("Confirm password", text: $passwordConfirmation)
-                        .textContentType(.newPassword)
-                        .focused($focusedField, equals: .passwordConfirmation)
-                        .padding(.horizontal, 16)
-                        .frame(height: 48)
+                    if emailMode == .signUp {
+                        Divider().overlay(.white.opacity(0.25))
+                        SecureField("Confirm password", text: $passwordConfirmation)
+                            .textContentType(.newPassword)
+                            .focused($focusedField, equals: .passwordConfirmation)
+                            .padding(.horizontal, 16)
+                            .frame(height: 48)
+                    }
                 }
                 .foregroundStyle(.white)
                 .modifier(LiquidGlassSurface(shape: .rounded(18)))
+            }
+
+            if emailStep == .email {
+                HStack(spacing: 7) {
+                    Text("New here?")
+                    Button("Sign up") { selectEmailMode(.signUp) }
+                    Text("or")
+                    Button("Sign in") { selectEmailMode(.signIn) }
+                }
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white)
             }
 
             if let message = auth.errorMessage {
@@ -174,33 +171,31 @@ private struct SignInView: View {
             Button {
                 Task {
                     if emailStep == .email {
-                        let cleanEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if cleanEmail.contains("@"), cleanEmail.contains(".") {
-                            email = cleanEmail
-                            withAnimation(.easeInOut(duration: 0.25)) {
-                                emailStep = .password
-                                focusedField = .password
-                            }
-                        } else {
-                            auth.errorMessage = "Enter a valid email address."
-                        }
+                        selectEmailMode(emailMode)
                     } else {
                         guard password.count >= 6 else {
                             auth.errorMessage = "Your password must be at least 6 characters."
                             return
                         }
-                        guard password == passwordConfirmation else {
-                            auth.errorMessage = "Those passwords don’t match."
-                            return
+                        if emailMode == .signUp {
+                            guard password == passwordConfirmation else {
+                                auth.errorMessage = "Those passwords don’t match."
+                                return
+                            }
                         }
-                        let success = await auth.signUp(email: email, password: password)
+                        let success: Bool
+                        if emailMode == .signUp {
+                            success = await auth.signUp(email: email, password: password)
+                        } else {
+                            success = await auth.signIn(email: email, password: password)
+                        }
                         if success { isSignedIn = true }
                     }
                 }
             } label: {
                 HStack(spacing: 8) {
                     if auth.isLoading { ProgressView().tint(.black) }
-                    Text(emailStep == .email ? "Continue" : "Create account")
+                    Text(emailStep == .email ? "Continue" : (emailMode == .signUp ? "Create account" : "Sign in"))
                 }
                 .font(.headline)
                 .foregroundStyle(.black)
@@ -211,6 +206,22 @@ private struct SignInView: View {
             .disabled(auth.isLoading)
         }
         .onAppear { focusedField = .email }
+    }
+
+    private func selectEmailMode(_ mode: EmailMode) {
+        let cleanEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard cleanEmail.contains("@"), cleanEmail.contains(".") else {
+            auth.errorMessage = "Enter a valid email address."
+            return
+        }
+
+        email = cleanEmail
+        emailMode = mode
+        auth.errorMessage = nil
+        withAnimation(.easeInOut(duration: 0.25)) {
+            emailStep = .password
+            focusedField = .password
+        }
     }
 }
 
