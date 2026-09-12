@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import AuthenticationServices
+import AVFoundation
 
 @main
 struct HumanHydrationApp: App {
@@ -43,7 +44,7 @@ private struct SignInView: View {
 
     var body: some View {
         ZStack {
-            BundledImage(name: "onboarding-background")
+            LoopingVideoBackground()
                 .ignoresSafeArea()
                 .overlay(Color.black.opacity(0.08).ignoresSafeArea())
             VStack(spacing: 22) {
@@ -151,6 +152,59 @@ private struct SignInView: View {
             .background(.white, in: Capsule())
             .disabled(auth.isLoading)
         }
+    }
+}
+
+private struct LoopingVideoBackground: UIViewRepresentable {
+    @StateObject private var controller = LoopingVideoController()
+
+    func makeUIView(context: Context) -> VideoBackgroundView {
+        let view = VideoBackgroundView()
+        view.playerLayer.player = controller.player
+        view.playerLayer.videoGravity = .resizeAspectFill
+        controller.start()
+        return view
+    }
+
+    func updateUIView(_ view: VideoBackgroundView, context: Context) {
+        view.playerLayer.player = controller.player
+    }
+}
+
+private final class VideoBackgroundView: UIView {
+    let playerLayer = AVPlayerLayer()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        layer.addSublayer(playerLayer)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        playerLayer.frame = bounds
+    }
+}
+
+private final class LoopingVideoController: ObservableObject {
+    let player = AVQueuePlayer()
+    private var looper: AVPlayerLooper?
+
+    init() {
+        guard let url = Bundle.main.url(forResource: "login-background", withExtension: "mp4", subdirectory: "DrinkIcons") else {
+            return
+        }
+
+        looper = AVPlayerLooper(player: player, templateItem: AVPlayerItem(url: url))
+        player.isMuted = true
+        player.actionAtItemEnd = .none
+    }
+
+    func start() {
+        player.play()
     }
 }
 
