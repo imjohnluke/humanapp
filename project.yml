@@ -1,0 +1,29 @@
+name: HumanHydration
+options:
+  bundleIdPrefix: com.humanhydration
+  deploymentTarget:
+    iOS: "17.0"
+packages: {}
+targets:
+  HumanHydration:
+    type: application
+    platform: iOS
+    sources:
+      - path: HumanHydration
+        excludes:
+          - Widgets/**
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.humanhydration.app
+      INFOPLIST_KEY_CFBundleDisplayName: Human Hydration
+      INFOPLIST_KEY_NSHumanReadableCopyright: ""
+      INFOPLIST_KEY_NSHealthShareUsageDescription: Human Hydration uses your water intake to show your progress.
+      INFOPLIST_KEY_NSHealthUpdateUsageDescription: Human Hydration saves your water intake to Apple Health.
+      GENERATE_INFOPLIST_FILE: YES
+      SWIFT_VERSION: "5.9"
+      TARGETED_DEVICE_FAMILY: "1,2"
+      CODE_SIGN_ENTITLEMENTS: HumanHydration/HumanHydration.entitlements
+    capabilities:
+      HealthKit:
+        entitlements:
+          com.apple.developer.healthkit: true
+      SignInWithApple: {}

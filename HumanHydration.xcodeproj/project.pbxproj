@@ -1,0 +1,465 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		02F12898A67301F1B8221002 /* bottle.png in Resources */ = {isa = PBXBuildFile; fileRef = 289300CD14639130D1169719 /* bottle.png */; };
+		15BC73099F53772CB68DFF26 /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0733B32270ECAAA2FCFCD4FA /* InsightsView.swift */; };
+		1F7F1AE935069B51A258B219 /* human-logo-mark.png in Resources */ = {isa = PBXBuildFile; fileRef = 67A12A1408A26436D3ACECAB /* human-logo-mark.png */; };
+		2B555166CBD690A6F05549E5 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62D79392ED67FF19ED6A1ED6 /* ProfileView.swift */; };
+		419CC49336AD50B82AA6AC24 /* HumanHydrationApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B86F048B17780B7E92C04D6 /* HumanHydrationApp.swift */; };
+		433FEB1D58A1C7220CD9F8CA /* big.png in Resources */ = {isa = PBXBuildFile; fileRef = 4B3C27D30FCA7499548DD473 /* big.png */; };
+		61D3B2E571BB22430DC22B16 /* glass.png in Resources */ = {isa = PBXBuildFile; fileRef = C11B2BEABD748E7F5A896737 /* glass.png */; };
+		6B7A32CDCFCB0D342322A3A1 /* HydrationEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = E22C8E53F07681E689AC9961 /* HydrationEntry.swift */; };
+		8E99DDBC64DDC2C1140B02CB /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 728F0CDA5F9F18611E0B778D /* SettingsView.swift */; };
+		97DE41510871047D1F37734E /* ReminderService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86B331122AA015C6072C8A4F /* ReminderService.swift */; };
+		A1BD2FAC7D706B9FD8744713 /* human-logo-wordmark.png in Resources */ = {isa = PBXBuildFile; fileRef = 93F9627E31CBE78FAB34F8A4 /* human-logo-wordmark.png */; };
+		B0F54513EFAFDBCC39561672 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB744917489A43742DFA6F21 /* TodayView.swift */; };
+		B4C0BAD099F594C11D89C9A8 /* HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C84038EF5909E10585C0720 /* HealthKitService.swift */; };
+		B5AEC66D82DA636F83029782 /* onboarding-background.png in Resources */ = {isa = PBXBuildFile; fileRef = 4DB9D518DD25585CFB4F5E35 /* onboarding-background.png */; };
+		CFA57712F138A704AC60413E /* HydrationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 338D6CDCEB5AD6C028BDAF48 /* HydrationStore.swift */; };
+		DAE3302A74CA38091CD9B6D1 /* stanley.png in Resources */ = {isa = PBXBuildFile; fileRef = 79BBFE2FF6E76337742E94D7 /* stanley.png */; };
+		E6F9176D2A1EFA8E1E1A7568 /* gallon.png in Resources */ = {isa = PBXBuildFile; fileRef = 83658110CF12859458B9395E /* gallon.png */; };
+		EC1C48C2B6A9701D0983DC9F /* gatorade.png in Resources */ = {isa = PBXBuildFile; fileRef = 843189EC3643B125B0CB0FAF /* gatorade.png */; };
+		F4454B0666AC783CF6BD7B81 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DD7303E4F24AB6F0DEACCA4 /* HistoryView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0733B32270ECAAA2FCFCD4FA /* InsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsightsView.swift; sourceTree = "<group>"; };
+		1DD7303E4F24AB6F0DEACCA4 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
+		289300CD14639130D1169719 /* bottle.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = bottle.png; sourceTree = "<group>"; };
+		338D6CDCEB5AD6C028BDAF48 /* HydrationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HydrationStore.swift; sourceTree = "<group>"; };
+		4B3C27D30FCA7499548DD473 /* big.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = big.png; sourceTree = "<group>"; };
+		4DB9D518DD25585CFB4F5E35 /* onboarding-background.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "onboarding-background.png"; sourceTree = "<group>"; };
+		62D79392ED67FF19ED6A1ED6 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		67A12A1408A26436D3ACECAB /* human-logo-mark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "human-logo-mark.png"; sourceTree = "<group>"; };
+		728F0CDA5F9F18611E0B778D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		79BBFE2FF6E76337742E94D7 /* stanley.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = stanley.png; sourceTree = "<group>"; };
+		7C84038EF5909E10585C0720 /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
+		83658110CF12859458B9395E /* gallon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gallon.png; sourceTree = "<group>"; };
+		843189EC3643B125B0CB0FAF /* gatorade.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = gatorade.png; sourceTree = "<group>"; };
+		86B331122AA015C6072C8A4F /* ReminderService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReminderService.swift; sourceTree = "<group>"; };
+		93F9627E31CBE78FAB34F8A4 /* human-logo-wordmark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "human-logo-wordmark.png"; sourceTree = "<group>"; };
+		9B86F048B17780B7E92C04D6 /* HumanHydrationApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HumanHydrationApp.swift; sourceTree = "<group>"; };
+		AB744917489A43742DFA6F21 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
+		ACC934710712E2A3B8CD95A6 /* HumanHydration.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = HumanHydration.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C11B2BEABD748E7F5A896737 /* glass.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = glass.png; sourceTree = "<group>"; };
+		E22C8E53F07681E689AC9961 /* HydrationEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HydrationEntry.swift; sourceTree = "<group>"; };
+		E2B8652F835180447425E1C8 /* HumanHydration.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HumanHydration.entitlements; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		26803F30C55B250B285C7322 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				7C84038EF5909E10585C0720 /* HealthKitService.swift */,
+				338D6CDCEB5AD6C028BDAF48 /* HydrationStore.swift */,
+				86B331122AA015C6072C8A4F /* ReminderService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		3698AC3CC9AD6E58DD86D109 /* Today */ = {
+			isa = PBXGroup;
+			children = (
+				AB744917489A43742DFA6F21 /* TodayView.swift */,
+			);
+			path = Today;
+			sourceTree = "<group>";
+		};
+		46D9E8AB872A005EF4547653 /* History */ = {
+			isa = PBXGroup;
+			children = (
+				1DD7303E4F24AB6F0DEACCA4 /* HistoryView.swift */,
+			);
+			path = History;
+			sourceTree = "<group>";
+		};
+		4C31577D1ED1275E4FBF184C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				ACC934710712E2A3B8CD95A6 /* HumanHydration.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		59F7ECC48CCDF8945EB0EF9B /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				46D9E8AB872A005EF4547653 /* History */,
+				74AC17953F8926548D1D69A6 /* Insights */,
+				AF02393F70A92A2E356A5CCA /* Profile */,
+				F48EA1005F5F0E06B0AEB237 /* Settings */,
+				3698AC3CC9AD6E58DD86D109 /* Today */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		5E8809EA1893E39042DA66BD /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				E22C8E53F07681E689AC9961 /* HydrationEntry.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		67F25DBEFF183EF8A76D17C3 = {
+			isa = PBXGroup;
+			children = (
+				726D447F219EA9BF7BE6EA9E /* HumanHydration */,
+				4C31577D1ED1275E4FBF184C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		68AFBDE2E1E761D901C649A5 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				D677A2B1B3A18AEC8786FB25 /* DrinkIcons */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		726D447F219EA9BF7BE6EA9E /* HumanHydration */ = {
+			isa = PBXGroup;
+			children = (
+				E2B8652F835180447425E1C8 /* HumanHydration.entitlements */,
+				8263D513227091A091460124 /* App */,
+				5E8809EA1893E39042DA66BD /* Models */,
+				68AFBDE2E1E761D901C649A5 /* Resources */,
+				26803F30C55B250B285C7322 /* Services */,
+				59F7ECC48CCDF8945EB0EF9B /* Views */,
+			);
+			path = HumanHydration;
+			sourceTree = "<group>";
+		};
+		74AC17953F8926548D1D69A6 /* Insights */ = {
+			isa = PBXGroup;
+			children = (
+				0733B32270ECAAA2FCFCD4FA /* InsightsView.swift */,
+			);
+			path = Insights;
+			sourceTree = "<group>";
+		};
+		8263D513227091A091460124 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				9B86F048B17780B7E92C04D6 /* HumanHydrationApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		AF02393F70A92A2E356A5CCA /* Profile */ = {
+			isa = PBXGroup;
+			children = (
+				62D79392ED67FF19ED6A1ED6 /* ProfileView.swift */,
+			);
+			path = Profile;
+			sourceTree = "<group>";
+		};
+		D677A2B1B3A18AEC8786FB25 /* DrinkIcons */ = {
+			isa = PBXGroup;
+			children = (
+				4B3C27D30FCA7499548DD473 /* big.png */,
+				289300CD14639130D1169719 /* bottle.png */,
+				83658110CF12859458B9395E /* gallon.png */,
+				843189EC3643B125B0CB0FAF /* gatorade.png */,
+				C11B2BEABD748E7F5A896737 /* glass.png */,
+				67A12A1408A26436D3ACECAB /* human-logo-mark.png */,
+				93F9627E31CBE78FAB34F8A4 /* human-logo-wordmark.png */,
+				4DB9D518DD25585CFB4F5E35 /* onboarding-background.png */,
+				79BBFE2FF6E76337742E94D7 /* stanley.png */,
+			);
+			path = DrinkIcons;
+			sourceTree = "<group>";
+		};
+		F48EA1005F5F0E06B0AEB237 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				728F0CDA5F9F18611E0B778D /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		AD535E3E3916DB9297104FEE /* HumanHydration */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AB25F5877CC523105FCCE4DF /* Build configuration list for PBXNativeTarget "HumanHydration" */;
+			buildPhases = (
+				10B3AACE0F8B1367D3C0B30F /* Sources */,
+				59AAB21984F2CF361BF1509A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HumanHydration;
+			packageProductDependencies = (
+			);
+			productName = HumanHydration;
+			productReference = ACC934710712E2A3B8CD95A6 /* HumanHydration.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B55042CC899F15DAC3DC6CB2 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 7472C33E5AAB77E37ADFFBE2 /* Build configuration list for PBXProject "HumanHydration" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 67F25DBEFF183EF8A76D17C3;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 4C31577D1ED1275E4FBF184C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				AD535E3E3916DB9297104FEE /* HumanHydration */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		59AAB21984F2CF361BF1509A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				433FEB1D58A1C7220CD9F8CA /* big.png in Resources */,
+				02F12898A67301F1B8221002 /* bottle.png in Resources */,
+				E6F9176D2A1EFA8E1E1A7568 /* gallon.png in Resources */,
+				EC1C48C2B6A9701D0983DC9F /* gatorade.png in Resources */,
+				61D3B2E571BB22430DC22B16 /* glass.png in Resources */,
+				1F7F1AE935069B51A258B219 /* human-logo-mark.png in Resources */,
+				A1BD2FAC7D706B9FD8744713 /* human-logo-wordmark.png in Resources */,
+				B5AEC66D82DA636F83029782 /* onboarding-background.png in Resources */,
+				DAE3302A74CA38091CD9B6D1 /* stanley.png in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		10B3AACE0F8B1367D3C0B30F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B4C0BAD099F594C11D89C9A8 /* HealthKitService.swift in Sources */,
+				F4454B0666AC783CF6BD7B81 /* HistoryView.swift in Sources */,
+				419CC49336AD50B82AA6AC24 /* HumanHydrationApp.swift in Sources */,
+				6B7A32CDCFCB0D342322A3A1 /* HydrationEntry.swift in Sources */,
+				CFA57712F138A704AC60413E /* HydrationStore.swift in Sources */,
+				15BC73099F53772CB68DFF26 /* InsightsView.swift in Sources */,
+				2B555166CBD690A6F05549E5 /* ProfileView.swift in Sources */,
+				97DE41510871047D1F37734E /* ReminderService.swift in Sources */,
+				8E99DDBC64DDC2C1140B02CB /* SettingsView.swift in Sources */,
+				B0F54513EFAFDBCC39561672 /* TodayView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		119C5E3D3F13B64C5000BD45 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		7FB57C9B137BE635EB0C0514 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		A75D5CEECEC2453377A24FD7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = HumanHydration/HumanHydration.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Human Hydration";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Human Hydration uses your water intake to show your progress.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Human Hydration saves your water intake to Apple Health.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.humanhydration.app;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		CA845618D0B62698A34544A5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = HumanHydration/HumanHydration.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Human Hydration";
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "Human Hydration uses your water intake to show your progress.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "Human Hydration saves your water intake to Apple Health.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.humanhydration.app;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		7472C33E5AAB77E37ADFFBE2 /* Build configuration list for PBXProject "HumanHydration" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				119C5E3D3F13B64C5000BD45 /* Debug */,
+				7FB57C9B137BE635EB0C0514 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		AB25F5877CC523105FCCE4DF /* Build configuration list for PBXNativeTarget "HumanHydration" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CA845618D0B62698A34544A5 /* Debug */,
+				A75D5CEECEC2453377A24FD7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = B55042CC899F15DAC3DC6CB2 /* Project object */;
+}
