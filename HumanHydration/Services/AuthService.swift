@@ -1,6 +1,5 @@
 import Foundation
 import Combine
-import Supabase
 
 @MainActor
 final class AuthService: ObservableObject {
@@ -9,23 +8,13 @@ final class AuthService: ObservableObject {
     @Published var errorMessage: String?
     @Published var confirmationMessage: String?
 
-    let client: SupabaseClient
-
     init() {
-        client = SupabaseClient(
-            supabaseURL: AppConfig.supabaseURL,
-            supabaseKey: AppConfig.supabasePublishableKey
-        )
-
         Task { await restoreSession() }
     }
 
     func restoreSession() async {
-        do {
-            _ = try await client.auth.session
+        if UserDefaults.standard.string(forKey: "supabaseAccessToken") != nil {
             isAuthenticated = true
-        } catch {
-            isAuthenticated = false
         }
     }
 
@@ -36,7 +25,14 @@ final class AuthService: ObservableObject {
         defer { isLoading = false }
 
         do {
-            try await client.auth.signIn(email: email.trimmingCharacters(in: .whitespacesAndNewlines), password: password)
+            let response = try await request(
+                path: "/auth/v1/token?grant_type=password",
+                body: [
+                    "email": email.trimmingCharacters(in: .whitespacesAndNewlines),
+                    "password": password
+                ]
+            )
+            saveSession(from: response)
             isAuthenticated = true
             errorMessage = nil
             confirmationMessage = nil
@@ -54,8 +50,15 @@ final class AuthService: ObservableObject {
         defer { isLoading = false }
 
         do {
-            try await client.auth.signUp(email: email.trimmingCharacters(in: .whitespacesAndNewlines), password: password)
-            if client.auth.currentSession != nil {
+            let response = try await request(
+                path: "/auth/v1/signup",
+                body: [
+                    "email": email.trimmingCharacters(in: .whitespacesAndNewlines),
+                    "password": password
+                ]
+            )
+            if response.accessToken != nil {
+                saveSession(from: response)
                 isAuthenticated = true
                 confirmationMessage = nil
             } else {
@@ -73,6 +76,37 @@ final class AuthService: ObservableObject {
         // Apple UI remains available while its Supabase provider settings are finalized.
         // The native Apple credential flow can be swapped into this service without changing the screen.
         isAuthenticated = true
+    }
+
+    private func request(path: String, body: [String: String]) async throws -> AuthResponse {
+        var request = URLRequest(url: AppConfig.supabaseURL.appending(path: path))
+        request.httpMethod = "POST"
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(AppConfig.supabasePublishableKey, forHTTPHeaderField: "apikey")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw AuthError.invalidResponse
+        }
+
+        let decoder = JSONDecoder()
+        if (200...299).contains(httpResponse.statusCode) {
+            return try decoder.decode(AuthResponse.self, from: data)
+        }
+
+        if let error = try? decoder.decode(AuthErrorResponse.self, from: data) {
+            throw AuthError.server(error.errorDescription ?? error.message ?? error.error ?? "Authentication failed.")
+        }
+        throw AuthError.server("Authentication failed. Try again.")
+    }
+
+    private func saveSession(from response: AuthResponse) {
+        guard let accessToken = response.accessToken else { return }
+        UserDefaults.standard.set(accessToken, forKey: "supabaseAccessToken")
+        if let refreshToken = response.refreshToken {
+            UserDefaults.standard.set(refreshToken, forKey: "supabaseRefreshToken")
+        }
     }
 
     private func validate(email: String, password: String) -> Bool {
@@ -102,5 +136,41 @@ final class AuthService: ObservableObject {
             return "That email already has an account. Try signing in."
         }
         return message
+    }
+}
+
+private struct AuthResponse: Decodable {
+    let accessToken: String?
+    let refreshToken: String?
+
+    enum CodingKeys: String, CodingKey {
+        case accessToken = "access_token"
+        case refreshToken = "refresh_token"
+    }
+}
+
+private struct AuthErrorResponse: Decodable {
+    let errorDescription: String?
+    let message: String?
+    let error: String?
+
+    enum CodingKeys: String, CodingKey {
+        case errorDescription = "error_description"
+        case message
+        case error
+    }
+}
+
+private enum AuthError: LocalizedError {
+    case invalidResponse
+    case server(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidResponse:
+            return "The server returned an invalid response."
+        case .server(let message):
+            return message
+        }
     }
 }

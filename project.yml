@@ -3,10 +3,7 @@ options:
   bundleIdPrefix: com.humanhydration
   deploymentTarget:
     iOS: "17.0"
-packages:
-  supabase:
-    url: https://github.com/supabase/supabase-swift.git
-    from: 2.0.0
+packages: {}
 targets:
   HumanHydration:
     type: application
@@ -15,9 +12,6 @@ targets:
       - path: HumanHydration
         excludes:
           - Widgets/**
-    dependencies:
-      - package: supabase
-        product: Supabase
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.humanhydration.app
       INFOPLIST_KEY_CFBundleDisplayName: Human Hydration
