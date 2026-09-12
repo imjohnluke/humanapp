@@ -82,42 +82,40 @@ private struct SignInView: View {
     private var emailForm: some View {
         VStack(spacing: 12) {
             if emailStep == .email {
-                TextField("", text: $email, prompt: Text("Email address").foregroundStyle(.white.opacity(0.72)))
-                    .textContentType(.emailAddress)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .focused($focusedField, equals: .email)
-                    .padding(.horizontal, 16)
-                    .frame(height: 54)
-                    .foregroundColor(.white)
-                    .tint(.white)
-                    .modifier(LiquidGlassSurface(shape: .capsule))
-            } else {
-                VStack(spacing: 0) {
-                    Text(email)
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.72))
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                ZStack {
+                    TextField("", text: $email, prompt: Text("Email address").foregroundStyle(.white.opacity(0.72)))
+                        .textContentType(.emailAddress)
+                        .keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .focused($focusedField, equals: .email)
                         .padding(.horizontal, 16)
-                        .frame(height: 44)
-                    Divider().overlay(.white.opacity(0.25))
+                        .foregroundColor(.white)
+                        .tint(.white)
+                }
+                .frame(height: 54)
+                .modifier(LiquidGlassSurface(shape: .capsule))
+            } else {
+                VStack(spacing: 12) {
                     SecureField("Password", text: $password)
                         .textContentType(emailMode == .signUp ? .newPassword : .password)
                         .focused($focusedField, equals: .password)
                         .padding(.horizontal, 16)
-                        .frame(height: 48)
+                        .frame(height: 54)
+                        .foregroundColor(.white)
+                        .tint(.white)
+                        .modifier(LiquidGlassSurface(shape: .capsule))
                     if emailMode == .signUp {
-                        Divider().overlay(.white.opacity(0.25))
                         SecureField("Confirm password", text: $passwordConfirmation)
                             .textContentType(.newPassword)
                             .focused($focusedField, equals: .passwordConfirmation)
                             .padding(.horizontal, 16)
-                            .frame(height: 48)
+                            .frame(height: 54)
+                            .foregroundColor(.white)
+                            .tint(.white)
+                            .modifier(LiquidGlassSurface(shape: .capsule))
                     }
                 }
-                .foregroundStyle(.white)
-                .modifier(LiquidGlassSurface(shape: .rounded(18)))
             }
 
             if let message = auth.errorMessage {
