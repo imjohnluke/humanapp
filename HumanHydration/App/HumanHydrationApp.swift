@@ -82,7 +82,7 @@ private struct SignInView: View {
     private var emailForm: some View {
         VStack(spacing: 12) {
             if emailStep == .email {
-                TextField(text: $email, prompt: Text("Email address").foregroundStyle(.white.opacity(0.72)))
+                TextField("", text: $email, prompt: Text("Email address").foregroundStyle(.white.opacity(0.72)))
                     .textContentType(.emailAddress)
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
