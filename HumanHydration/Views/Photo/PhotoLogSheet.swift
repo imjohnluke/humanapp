@@ -197,4 +197,3 @@ struct PhotoLogSheet: View {
     }
     private func resetEstimate() { estimate = nil; amountText = ""; didLog = false; errorMessage = nil; savedDrink = false; quarters = 4 }
 }
-
