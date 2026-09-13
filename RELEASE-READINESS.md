@@ -17,7 +17,7 @@ Updated September 12, 2026. This is a working release checklist, not a declarati
 
 - Display name: **human app**. Bundle ID remains `com.humanhydration.app`.
 - Website supplied by owner: `thehumanapp.com`. Public pages and support contact not verified.
-- Recommendation: free TestFlight and free first release. No pricing, paywall, or subscription product has been configured; owner has not committed to pricing.
+- Recommendation: free TestFlight and free first release. Subscription implementation and a US $4.99/month draft now exist; there is no annual plan. Paid-launch validation remains pending. See APPLE-BILLING.md.
 - Final icon supplied as `/Users/johnluke/Downloads/f/Logo.png`, imported in AppIcon at 1024×1024 with white background and no alpha. Original artwork and spacing retained.
 
 ## Completed in this release pass
@@ -42,7 +42,7 @@ Updated September 12, 2026. This is a working release checklist, not a declarati
 5. **Privacy/support website:** publish approved privacy policy and real support contact on `thehumanapp.com`, then link from app and App Store Connect. Owner identity, contact, retention and launch audience still needed. No legal policy has been invented or published.
 6. **Data reliability:** logs/onboarding/bottle are still account-scoped local defaults, not Supabase sync. Remote tables exist and have RLS but were empty on audit. Decide explicitly whether v1 is local-only; do not promise cross-device backup until sync, tombstones, conflict handling and account-isolation tests work. Preserve existing local data during any migration.
 7. **Rewards:** locked colors and future slots are previews, not an implemented reward system. Either implement/test unlock persistence and clear rules or remove unreleased reward promises for v1. Never reward drinking beyond the goal.
-8. **Subscription placeholder:** Settings still links to Apple subscription management and explicitly says no paid plan is configured. Remove for a free launch, or implement StoreKit products, restore, entitlement handling and purchase review before charging.
+8. **Subscriptions:** StoreKit purchase/restore and server verification are implemented. Finish availability, notification delivery verification, privacy URL, OpenAI setup and device sandbox testing before enabling billing; see APPLE-BILLING.md.
 9. **Supabase security:** security advisor reported leaked-password protection disabled. Review availability/cost before enabling. No missing-RLS warning returned for the existing tables.
 10. **Release QA:** new accounts A/B, confirmation, bad password, reset success/expired link, restart, offline state, midnight/timezone change, log/remove, goals, widgets, reminders denied/enabled, small iPhone, iPad and Dynamic Type. Test new auth UI on a real device before TestFlight.
 
@@ -57,3 +57,29 @@ App record human hydration is created with English (US) and the existing bundle 
 - [Supabase password flows and production email](https://supabase.com/docs/guides/auth/passwords)
 - [Supabase leaked-password protection](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)
 - [Apple required-reason API declarations](https://developer.apple.com/documentation/bundleresources/app-privacy-configuration/nsprivacyaccessedapitypes/nsprivacyaccessedapitype)
+
+## TestFlight upload — September 13
+
+All Swift checks passed under Xcode 27 (27A5252f). Full signed release archive succeeded at `/tmp/human-testflight-20260913.xcarchive`. Export/upload through the existing automatic signing configuration succeeded at 15:37 CDT; Apple reported “Uploaded package is processing.” This includes the latest guided scanner, saved drinks, ounce displays, profile and Home/nav changes.
+
+App Store Connect browser authentication expired, so final processing and internal-group Testing status are not yet independently verified. The existing human internal group was previously configured for automatic distribution. No public App Store submission was made. Source version settings now keep app and widget build numbers aligned; Xcode managed versions during upload.
+
+## Health integration release — September 13, 2026
+
+Signed Release archive succeeded at `/tmp/human-health-testflight-20260913.xcarchive`, version 1.0 build 3, with HealthKit entitlement. This supersedes the earlier note that HealthKit was removed: workout and optional sleep reads now support on-device Insights and the optional onboarding/Settings connection. No automatic workout notifications or health-to-AI upload are implemented. Full Debug build and Swift checks passed before archive.
+
+Fresh public Supabase Auth settings check returned `external.apple=false`: Apple sign-in is not operational. Paid subscription checkout remains gated pending privacy URL, product availability, signed notification verification and sandbox purchase testing. Test Pro access is separate from paid checkout.
+
+The initial build 3 upload failed Apple validation because NSHealthUpdateUsageDescription was missing. Added an accurate purpose string explaining that this version does not request Health write access, regenerated, and rebuilt. Corrected signed archive: `/tmp/human-health-testflight-fixed-20260913.xcarchive`. Upload accepted at 16:03:57 CDT: “Uploaded package is processing”, “Upload succeeded”, EXPORT SUCCEEDED. Final TestFlight processing/internal-group availability has not been independently confirmed. No public App Store release.
+
+## Apple sign-in configuration corrected — September 13, 2026
+
+Enabled Supabase Apple provider with native Client ID `com.humanhydration.app`. Fresh uncached public `/auth/v1/settings` response confirms `external.apple=true`. No OAuth secret is required for this native ID-token flow. Device sign-in still needs verification. This supersedes the disabled-provider findings above. App Store Connect display-name correction remains pending renewed browser sign-in; the uploaded app bundle display name is already `Human Hydration`.
+
+App Store Connect name updated to `Human Hydration` in English (U.S.) App Information and saved on September 13. Build 3 upload is Complete and associated with human internal; list displays Ready to Submit (no external review submitted).
+
+## External TestFlight setup
+
+Created external group `Human Hydration Public Beta` and selected build 3 in the Add Builds flow. Apple requires Beta App Review information before submission. Prepared beta description, known owner name/email, and the existing test Pro reviewer login in the form. Contact phone number is required and awaiting the owner; submission is not complete and no usable public invite link has been verified. The browser is left on the review information form.
+
+Owner supplied required beta review contact phone. Submitted 1.0 (3) to external Beta App Review; verified Waiting for Review. Created open public invite link https://testflight.apple.com/join/bWrHt9Qp for Human Hydration Public Beta. Apple states testers cannot join until the group has an approved build. No public App Store release was submitted.

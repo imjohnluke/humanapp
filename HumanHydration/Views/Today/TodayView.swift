@@ -4,8 +4,6 @@ import UIKit
 struct TodayView: View {
     @EnvironmentObject private var store: HydrationStore
     @State private var selectedDate = Date.now
-    @State private var showingBottlePicker = false
-    @State private var showingSettings = false
     @State private var historyMetric: HydrationHistoryMetric?
 
     var body: some View {
@@ -17,10 +15,9 @@ struct TodayView: View {
                         HStack(spacing: 8) {
                             BundledLogoImage(name: "human-logo-mark")
                                 .frame(width: 28, height: 28)
-                            Text("human").font(.title3.weight(.regular)).foregroundStyle(.black)
+                            Text("Human Hydration").font(.title3.weight(.regular)).foregroundStyle(.black)
                         }
                         Spacer()
-                        Button { showingSettings = true } label: { Image(systemName: "gearshape").font(.headline.weight(.regular)).foregroundStyle(.black) }
                         Button { historyMetric = .streak } label: {
                             Label("\(store.currentStreak)", systemImage: "flame.fill").font(.headline.weight(.regular)).foregroundStyle(.orange).padding(.horizontal, 16).padding(.vertical, 11).modifier(LiquidGlassSurface(shape: .capsule))
                         }.buttonStyle(.plain)
@@ -28,49 +25,45 @@ struct TodayView: View {
                     DayStrip(selectedDate: $selectedDate)
 
                     if Calendar.current.isDateInToday(selectedDate) {
-                        TodayHeroCard(store: store)
+                        TodayHydrationSection(store: store)
                         HStack(spacing: 12) {
                             Button { historyMetric = .streak } label: {
                                 BentoCard(icon: "flame.fill", title: "Streak", value: "\(store.currentStreak) days", color: .orange)
                             }.buttonStyle(.plain)
                             Button { historyMetric = .average } label: {
-                                BentoCard(icon: "drop.fill", title: "Daily average", value: "\(store.dailyAverageML) ml", color: .blue)
+                                BentoCard(icon: "drop.fill", title: "Daily average", value: "\(WaterVolume.label(store.dailyAverageML))", color: .blue)
                             }.buttonStyle(.plain)
                         }
+                        HStack(spacing: 14) {
+                            Image(systemName: "trophy.fill")
+                                .font(.title2).foregroundStyle(.purple)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Personal record").font(.headline.weight(.regular))
+                                Text("Longest streak hitting your full daily goal")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 8)
+                            Text("\(store.bestStreak) \(store.bestStreak == 1 ? "day" : "days")")
+                                .font(.title3.weight(.regular)).monospacedDigit()
+                                .fixedSize(horizontal: true, vertical: false)
+                        }
+                        .padding(18)
+                        .modifier(LiquidGlassSurface(shape: .rounded(20)))
                     } else {
                         PastDayCard(amount: store.amount(on: selectedDate), goal: store.dailyGoalML, date: selectedDate)
+                        DayEntriesView(date: selectedDate)
                     }
 
-                    DayEntriesView(date: selectedDate)
-
-                    if Calendar.current.isDateInToday(selectedDate) {
-                        Button { showingBottlePicker = true } label: {
-                            HStack(spacing: 14) {
-                                if let bottle = store.bottle {
-                                    DrinkIcon(name: bottle.assetName, starter: true).frame(width: 54, height: 58)
-                                } else {
-                                    Image(systemName: "plus.viewfinder").font(.title2).foregroundStyle(.blue).frame(width: 54, height: 58)
-                                }
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("My bottle collection").font(.headline.weight(.regular))
-                                    Text(store.bottle.map { "\($0.name) · \($0.capacityML) ml" } ?? "Choose a bottle to get started").font(.subheadline).foregroundStyle(.secondary)
-                                }
-                                Spacer(); Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
-                            }.padding(14).frame(maxWidth: .infinity, alignment: .leading)
-                        }.buttonStyle(.plain).foregroundStyle(.primary).modifier(LiquidGlassSurface(shape: .rounded(20)))
-                    }
                 }
                 .padding()
+                // Let the final card scroll fully above the floating navigation.
+                .padding(.bottom, 80)
             }
         }
-        .sheet(isPresented: $showingBottlePicker) { BottlePickerSheet() }
-        .sheet(isPresented: $showingSettings) { SettingsView() }
         .sheet(item: $historyMetric) { HydrationHistorySheet(metric: $0) }
     }
 
-    private func bottleColor(_ name: String) -> Color {
-        switch name { case "white": return .white; case "purple": return .purple; case "pink": return .pink; case "blue": return .blue; case "navy": return Color(red: 0.04, green: 0.10, blue: 0.25); case "black": return .black; default: return .white }
-    }
+
 }
 
 struct BottlePickerSheet: View {
@@ -90,20 +83,7 @@ struct BottlePickerSheet: View {
     private func colorForPage(_ asset: String) -> String {
         asset == selectedAsset && BottleCatalog.colors(for: asset).contains(previewColor) ? previewColor : "clear"
     }
-    private func swatchColor(_ name: String) -> Color {
-        switch name {
-        case "purple": return .purple
-        case "pink": return .pink
-        case "blue": return .blue
-        case "green": return .green
-        case "navy": return Color(red: 0.04, green: 0.10, blue: 0.25)
-        case "black": return Color(white: 0.12)
-        default: return .white
-        }
-    }
-    private func needsTintPreview(_ asset: String) -> Bool {
-        ["stanley", "big"].contains(asset) && !["clear", "pink"].contains(colorForPage(asset))
-    }
+    private func swatchColor(_ name: String) -> Color { BottleFinishIcon.color(name) }
 
     var body: some View {
         NavigationStack {
@@ -116,13 +96,12 @@ struct BottlePickerSheet: View {
                         ForEach(0..<(options.count + 2), id: \.self) { index in
                             let option = options[(index + options.count - 1) % options.count]
                             VStack(spacing: 12) {
-                                DrinkIcon(name: option.0, starter: colorForPage(option.0) == "clear" || needsTintPreview(option.0))
-                                    .colorMultiply(needsTintPreview(option.0) ? swatchColor(colorForPage(option.0)) : .white)
+                                BottleFinishIcon(asset: option.0, finish: colorForPage(option.0))
                                     .frame(height: 230)
                                     .padding(.horizontal, 48)
                                     .shadow(color: .black.opacity(0.08), radius: 12, y: 8)
                                 Text(option.1).font(.title3.weight(.regular))
-                                Text(option.0 == "glass" ? "\(option.2) ml" : "\(option.2) ml · \(colorForPage(option.0).capitalized)\(colorForPage(option.0) == "clear" ? " edition" : " preview")").font(.subheadline).foregroundStyle(.secondary)
+                                Text("\(BottleCatalog.sizeLabel(capacityML: option.2)) · \(colorForPage(option.0).capitalized)\(store.isFinishUnlocked(colorForPage(option.0)) ? " edition" : " preview")").font(.subheadline).foregroundStyle(.secondary)
                             }.frame(maxWidth: .infinity).tag(index)
                         }
                     }
@@ -132,7 +111,7 @@ struct BottlePickerSheet: View {
                         let option = options[(newPage + options.count - 1) % options.count]
                         if selectedAsset != option.0 {
                             selectedAsset = option.0
-                            previewColor = "clear"
+                            // The selected finish applies to every bottle style.
                         }
                     }
                     .task(id: page) {
@@ -158,20 +137,20 @@ struct BottlePickerSheet: View {
                             ForEach(colors, id: \.0) { option in
                                 Button {
                                     previewColor = option.0
-                                    if option.0 != "clear" { lockedColor = option.0 }
+                                    if !store.isFinishUnlocked(option.0) { lockedColor = option.0 }
                                 } label: {
                                         Circle().fill(option.1).frame(width: 32, height: 32)
                                             .overlay(Circle().stroke(.black.opacity(0.15), lineWidth: 1))
                                             .overlay {
-                                                Image(systemName: option.0 == "clear" ? "checkmark" : "lock.fill")
+                                                Image(systemName: store.isFinishUnlocked(option.0) ? "checkmark" : "lock.fill")
                                                     .font(.caption2.weight(.regular))
-                                                    .foregroundStyle(option.0 == "clear" ? .black : .white)
+                                                    .foregroundStyle(option.0 == "black" ? .white : .black)
                                             }
                                             .padding(5)
                                             .overlay(Circle().stroke(option.0 == previewColor ? .black : .clear, lineWidth: 1.5))
                                             .frame(width: 44, height: 44)
                                 }.buttonStyle(.plain)
-                                    .accessibilityLabel("\(option.0), \(option.0 == "clear" ? "included" : "locked. Preview and view unlock requirement")")
+                                    .accessibilityLabel("\(option.0), \(store.isFinishUnlocked(option.0) ? "unlocked" : "locked. Preview and view unlock requirement")")
                                     .accessibilityAddTraits(previewColor == option.0 ? .isSelected : [])
                             }
                         }.padding(.vertical, 8)
@@ -180,11 +159,11 @@ struct BottlePickerSheet: View {
                     }.frame(height: 60)
                     }
                     Button {
-                        guard previewColor == "clear" else { lockedColor = previewColor; return }
+                        guard store.isFinishUnlocked(previewColor) else { lockedColor = previewColor; return }
                         let chosen = options.first { $0.0 == selectedAsset }!
-                        store.bottle = WaterBottle(name: chosen.1, capacityML: chosen.2, assetName: chosen.0, colorName: BottleCatalog.startingColor(chosen.0))
+                        store.selectBottle(WaterBottle(name: chosen.1, capacityML: chosen.2, assetName: chosen.0, colorName: previewColor))
                         dismiss()
-                    } label: { Text(previewColor == "clear" ? "Use this bottle" : "How to unlock").font(.headline.weight(.regular)).frame(maxWidth: .infinity).padding(.vertical, 15) }.buttonStyle(.borderedProminent).tint(.black)
+                    } label: { Text(store.isFinishUnlocked(previewColor) ? "Use this bottle" : "How to unlock").font(.headline.weight(.regular)).frame(maxWidth: .infinity).padding(.vertical, 15) }.buttonStyle(.borderedProminent).tint(.black)
                 }.padding()
             }.scrollContentBackground(.hidden)
                 .background(Color.clear)
@@ -198,11 +177,12 @@ struct BottlePickerSheet: View {
                 .alert("\(lockedColor?.capitalized ?? "Color") edition", isPresented: Binding(get: { lockedColor != nil }, set: { if !$0 { lockedColor = nil } })) {
                     Button("Got it", role: .cancel) { lockedColor = nil }
                 } message: {
-                    Text("Reach your daily goal for \(requiredDays(for: lockedColor ?? "")) consecutive days to earn this edition. Extra water above your goal won’t speed it up.\n\nReward unlocking is coming soon; clear is available now.")
+                    Text("Reach your daily goal for \(BottleCatalog.finish(lockedColor ?? "")?.days ?? 0) consecutive days to unlock this finish for every bottle style. Once earned, it stays unlocked. Extra water above your goal won’t speed it up.")
                 }
                 .onAppear {
                     if let bottle = store.bottle, options.contains(where: { $0.0 == bottle.assetName }) {
                         selectedAsset = bottle.assetName
+                        previewColor = store.isFinishUnlocked(bottle.colorName) ? bottle.colorName : "clear"
                         page = (options.firstIndex(where: { $0.0 == bottle.assetName }) ?? 1) + 1
                     }
                 }
@@ -218,9 +198,7 @@ struct BottlePickerSheet: View {
             }
     }
 
-    private func requiredDays(for color: String) -> Int {
-        ["green": 3, "purple": 3, "pink": 7, "blue": 14, "navy": 30, "black": 60][color] ?? 3
-    }
+
 }
 
 private struct BundledLogoImage: View {
@@ -241,37 +219,107 @@ private struct BundledLogoImage: View {
 }
 
 private struct DayStrip: View {
+    @EnvironmentObject private var store: HydrationStore
     @Binding var selectedDate: Date
     private let days = Array(-5...0)
+
     var body: some View {
         HStack(spacing: 8) {
             ForEach(days, id: \.self) { offset in
                 let date = Calendar.current.date(byAdding: .day, value: offset, to: .now) ?? .now
                 let isSelected = Calendar.current.isDate(date, inSameDayAs: selectedDate)
-                VStack(spacing: 7) {
-                    Text(date, format: .dateTime.weekday(.narrow)).font(.subheadline.weight(.regular))
-                    Text(date, format: .dateTime.day()).font(.headline.weight(.regular))
-                }.frame(maxWidth: .infinity).padding(.vertical, 10).foregroundStyle(.primary).modifier(isSelected ? LiquidGlassSurface(shape: .rounded(10)) : LiquidGlassSurface(shape: .none))
-                    .contentShape(Rectangle()).onTapGesture { selectedDate = date }
+                let amount = store.amount(on: date)
+                let reachedGoal = store.dailyGoalML > 0 && amount >= store.dailyGoalML
+                let isToday = Calendar.current.isDateInToday(date)
+                Button { selectedDate = date } label: {
+                    VStack(spacing: 7) {
+                        Text(date, format: .dateTime.weekday(.narrow)).font(.subheadline.weight(.regular))
+                        ZStack {
+                            Circle().trim(from: 0.1, to: 0.9)
+                                .stroke(.white.opacity(0.7), style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                                .rotationEffect(.degrees(90))
+                            Circle()
+                                .trim(from: 0.1, to: 0.1 + 0.8 * min(Double(amount) / Double(max(store.dailyGoalML, 1)), 1))
+                                .stroke(
+                                    reachedGoal ? Color.blue : Color(red: 0.48, green: 0.72, blue: 0.92),
+                                    style: StrokeStyle(lineWidth: 5, lineCap: .round)
+                                )
+                                .rotationEffect(.degrees(90))
+                            Circle().fill(isSelected ? .white.opacity(0.85) : .clear)
+                                .padding(6)
+                            Text(date, format: .dateTime.day())
+                                .font(.subheadline.weight(.regular))
+                        }
+                        .frame(width: 38, height: 38)
+                    }
+                    .frame(maxWidth: .infinity).padding(.vertical, 10)
+                    .foregroundStyle(.primary)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(date.formatted(date: .complete, time: .omitted))
+                .accessibilityValue("\(WaterVolume.number(amount)) of \(WaterVolume.label(store.dailyGoalML)). \(reachedGoal ? "Goal reached" : isToday ? "In progress" : "Goal not reached")")
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
         }
     }
 }
 
-private struct TodayHeroCard: View {
+private struct TodayHydrationSection: View {
     @ObservedObject var store: HydrationStore
+    @State private var showingAddWater = false
+    @State private var showingDrinks = false
+
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 5) {
-                Text("Today’s hydration").font(.subheadline.weight(.regular)).foregroundStyle(.secondary)
-                HStack(alignment: .firstTextBaseline, spacing: 5) {
-                    Text("\(max(store.dailyGoalML - store.todayAmountML, 0))").font(.system(size: 30, weight: .regular, design: .rounded)).lineLimit(1).minimumScaleFactor(0.55).allowsTightening(true)
-                    Text("ml left").font(.body)
-                }
+        VStack(spacing: 22) {
+            Text("Today’s hydration")
+                .font(.headline.weight(.regular))
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+
+            HydrationProgressView(progress: store.todayProgress, amount: store.todayAmountML, goal: store.dailyGoalML)
+                .aspectRatio(1, contentMode: .fit)
+                .frame(maxWidth: 280)
+                .padding(.horizontal, 10)
+                .padding(.top, 8)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Today’s hydration")
+                .accessibilityValue("\(WaterVolume.number(store.todayAmountML)) of \(WaterVolume.label(store.dailyGoalML))")
+
+            if let drink = store.selectedDrink {
+                Button { store.addWater(drink.capacityML) } label: {
+                    HStack(spacing: 8) {
+                        Text("Log \(BottleCatalog.displayName(drink.name).lowercased())")
+                            .font(.subheadline.weight(.medium))
+                        Text("\(drink.isEstimate && drink.capacityML != 3785 ? "~" : "")\(BottleCatalog.sizeLabel(capacityML: drink.capacityML))")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }.padding(.horizontal, 16).frame(maxWidth: .infinity).frame(height: 46)
+                }.buttonStyle(.plain).foregroundStyle(.primary)
+                    .background(Color.blue.opacity(0.07), in: Capsule())
+                    .modifier(LiquidGlassSurface(shape: .capsule))
+            } else {
+                Text("Make your usual drink a one-tap log.")
+                    .font(.subheadline).foregroundStyle(.secondary)
+                Button("Set up my glass or bottle") { showingDrinks = true }
+                    .buttonStyle(.borderedProminent).tint(.black)
             }
-            Spacer()
-            HydrationProgressView(progress: store.todayProgress, amount: store.todayAmountML, goal: store.dailyGoalML).frame(width: 170, height: 170)
-        }.padding(22).modifier(LiquidGlassSurface(shape: .rounded(28)))
+            HStack(spacing: 24) {
+                Button("Enter manually") { showingAddWater = true }
+                if store.selectedDrink != nil {
+                    Button("Change default size") { showingDrinks = true }
+                }
+            }.font(.caption).foregroundStyle(.secondary)
+
+            Divider()
+            DayEntriesView(date: .now, embedded: true)
+
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 24)
+        .frame(maxWidth: .infinity)
+        .modifier(LiquidGlassSurface(shape: .rounded(28)))
+        .sheet(isPresented: $showingAddWater) { AddWaterSheet() }
+        .sheet(isPresented: $showingDrinks) { DrinkSizeSheet() }
     }
 }
 
@@ -283,9 +331,9 @@ private struct PastDayCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
             HStack { VStack(alignment: .leading, spacing: 4) { Text(date, format: .dateTime.weekday(.wide)); Text("Daily result").font(.subheadline).foregroundStyle(.secondary) }; Spacer(); Image(systemName: progress >= 1 ? "checkmark.circle.fill" : "drop.fill").font(.title).foregroundStyle(progress >= 1 ? .green : .blue) }
-            HStack(alignment: .firstTextBaseline) { Text("\(amount) ml").font(.system(size: 38, weight: .regular, design: .rounded)); Spacer(); Text("\(Int(progress * 100))% of goal").font(.subheadline.weight(.regular)).foregroundStyle(.secondary) }
+            HStack(alignment: .firstTextBaseline) { Text("\(WaterVolume.label(amount))").font(.system(size: 38, weight: .regular, design: .rounded)); Spacer(); Text("\(Int(progress * 100))% of goal").font(.subheadline.weight(.regular)).foregroundStyle(.secondary) }
             ProgressView(value: progress).tint(progress >= 1 ? .green : .blue)
-            Text(progress >= 1 ? "Goal reached" : "\(max(goal - amount, 0)) ml short of your goal").font(.subheadline).foregroundStyle(.secondary)
+            Text(progress >= 1 ? "Goal reached" : "\(WaterVolume.label(max(goal - amount, 0))) short of your goal").font(.subheadline).foregroundStyle(.secondary)
         }.padding(24).modifier(LiquidGlassSurface(shape: .rounded(28)))
     }
 }
@@ -293,21 +341,38 @@ private struct PastDayCard: View {
 private struct DayEntriesView: View {
     @EnvironmentObject private var store: HydrationStore
     let date: Date
+    var embedded = false
 
     private var dayEntries: [HydrationEntry] {
         store.entries.filter { Calendar.current.isDate($0.date, inSameDayAs: date) }.sorted { $0.date > $1.date }
     }
 
     var body: some View {
+        if embedded {
+            entriesContent
+        } else {
+            entriesContent.padding(18)
+                .modifier(LiquidGlassSurface(shape: .rounded(20)))
+        }
+    }
+
+    private var entriesContent: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("\(Calendar.current.isDateInToday(date) ? "Today’s" : "Day’s") entries").font(.headline.weight(.regular))
+            HStack {
+                Text("\(Calendar.current.isDateInToday(date) ? "Today’s" : "Day’s") entries").font(.headline.weight(.regular))
+                Spacer()
+                if let entry = store.undoEntry, dayEntries.contains(where: { $0.id == entry.id }) {
+                    Button("Undo") { store.undoLastLog() }.font(.caption)
+                        .accessibilityLabel("Undo last water log")
+                }
+            }
             if dayEntries.isEmpty {
                 Text("No water logged yet").font(.subheadline).foregroundStyle(.secondary).padding(.vertical, 8)
             } else {
                 ForEach(dayEntries) { entry in
                     HStack(spacing: 12) {
                         Image(systemName: "drop.fill").foregroundStyle(.blue)
-                        Text("\(entry.amountML) ml").font(.subheadline.weight(.regular))
+                        Text("\(WaterVolume.label(entry.amountML))").font(.subheadline.weight(.regular))
                         Spacer()
                         Text(entry.date, format: .dateTime.hour().minute()).font(.caption).foregroundStyle(.secondary)
                         Button(role: .destructive) { store.removeEntry(entry) } label: { Image(systemName: "trash") }.buttonStyle(.borderless)
@@ -316,7 +381,7 @@ private struct DayEntriesView: View {
                 }
             }
         }
-        .padding(18).frame(maxWidth: .infinity, alignment: .leading).modifier(LiquidGlassSurface(shape: .rounded(20)))
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -332,7 +397,20 @@ struct HydrationProgressView: View {
                 let end = 0.92
                 Circle().trim(from: start, to: end).stroke(.gray.opacity(0.14), style: StrokeStyle(lineWidth: 18, lineCap: .round))
                     .rotationEffect(.degrees(90))
-                Circle().trim(from: start, to: start + ((end - start) * progress)).stroke(.gray.opacity(0.62), style: StrokeStyle(lineWidth: 18, lineCap: .round))
+                Circle().trim(from: start, to: start + ((end - start) * progress))
+                    .stroke(
+                        AngularGradient(
+                            colors: [
+                                Color(red: 0.88, green: 0.95, blue: 1.0),
+                                Color(red: 0.38, green: 0.69, blue: 0.96),
+                                Color(red: 0.12, green: 0.48, blue: 0.91)
+                            ],
+                            center: .center,
+                            startAngle: .degrees(start * 360),
+                            endAngle: .degrees((start + (end - start) * max(progress, 0.001)) * 360)
+                        ),
+                        style: StrokeStyle(lineWidth: 18, lineCap: .round)
+                    )
                     .rotationEffect(.degrees(90)).animation(.easeInOut(duration: 0.8), value: progress)
                 VStack(spacing: 5) { Image(systemName: "drop.fill").font(.title2); Text("\(Int(progress * 100))%").font(.title3.weight(.regular)) }.foregroundStyle(.primary)
             }
@@ -419,5 +497,27 @@ struct WaveShape: Shape {
         path.addLine(to: CGPoint(x: rect.width, y: rect.height))
         path.closeSubpath()
         return path
+    }
+}
+
+struct BottleFinishIcon: View {
+    let asset: String
+    let finish: String
+
+    static func color(_ finish: String) -> Color {
+        switch finish {
+        case "black": return Color(white: 0.16)
+        case "bronze": return Color(red: 0.72, green: 0.43, blue: 0.23)
+        case "silver": return Color(red: 0.68, green: 0.72, blue: 0.77)
+        case "gold": return Color(red: 0.91, green: 0.71, blue: 0.29)
+        case "platinum": return Color(red: 0.88, green: 0.94, blue: 0.98)
+        default: return .white
+        }
+    }
+
+    var body: some View {
+        DrinkIcon(name: asset, starter: true)
+            .saturation(finish == "clear" ? 1 : 0)
+            .colorMultiply(Self.color(finish))
     }
 }

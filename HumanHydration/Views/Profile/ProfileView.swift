@@ -1,9 +1,12 @@
 import SwiftUI
 
 struct ProfileView: View {
+    @EnvironmentObject private var auth: AuthService
     @EnvironmentObject private var store: HydrationStore
+    @EnvironmentObject private var subscriptions: SubscriptionService
+    @State private var showingSettings = false
+    @State private var showingPro = false
     @State private var showingCollection = false
-    @State private var showingMilestones = false
     @State private var historyMetric: HydrationHistoryMetric?
 
     var body: some View {
@@ -11,54 +14,72 @@ struct ProfileView: View {
             HydrationTheme.canvas.ignoresSafeArea()
             ScrollView {
                 VStack(spacing: 22) {
-                    VStack(spacing: 10) {
-                        Circle().fill(.white.opacity(0.65)).frame(width: 84, height: 84)
-                            .overlay(Image(systemName: "person.fill").font(.system(size: 34, weight: .light)).foregroundStyle(.black.opacity(0.55)))
+                    HStack(spacing: 16) {
+                        Circle().fill(.white.opacity(0.65)).frame(width: 72, height: 72)
+                            .overlay(Image(systemName: "person.fill").font(.system(size: 30, weight: .light)).foregroundStyle(.black.opacity(0.55)))
                             .overlay(Circle().stroke(.white.opacity(0.9), lineWidth: 1))
-                        Text(store.displayName.isEmpty ? "Your name" : store.displayName).font(.title2.weight(.regular))
-                    }
-                    .frame(maxWidth: .infinity).padding(.top, 18).padding(.bottom, 8)
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Label("Hydration score", systemImage: "drop.fill").font(.headline.weight(.regular))
-                        HStack(alignment: .firstTextBaseline, spacing: 5) {
-                            Text("\(Int(store.todayProgress * 100))").font(.system(size: 42, weight: .regular, design: .rounded))
-                            Text("/ 100").font(.subheadline).foregroundStyle(.secondary)
-                            Spacer()
-                            Text("Today").font(.caption).foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(store.displayName.isEmpty ? "Your name" : store.displayName)
+                                .font(.title2.weight(.regular))
+                                .fixedSize(horizontal: false, vertical: true)
+                            ViewThatFits(in: .horizontal) {
+                                HStack(spacing: 8) {
+                                    memberSinceLabel
+                                    membershipBadge
+                                }
+                                VStack(alignment: .leading, spacing: 2) {
+                                    memberSinceLabel
+                                    membershipBadge
+                                }
+                            }
                         }
-                        ProgressView(value: store.todayProgress).tint(.black)
-                        Text("Your daily goal completion—not a medical health score.").font(.caption).foregroundStyle(.secondary)
-                    }.foregroundStyle(.black).padding(20)
-                        .modifier(LiquidGlassSurface(shape: .rounded(24)))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        Button { showingSettings = true } label: {
+                            Image(systemName: "gearshape")
+                                .font(.headline.weight(.regular))
+                                .foregroundStyle(.black)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Settings")
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, 18).padding(.bottom, 8)
+
+                    ProfileGoalCard(amount: store.todayAmountML, goal: store.dailyGoalML)
 
                     VStack(alignment: .leading, spacing: 14) {
                         Text("My bottle collection").font(.headline.weight(.regular))
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
-                            ForEach(0..<6) { slot in
-                                Button {
-                                    if slot == 0 { showingCollection = true }
-                                    else { showingMilestones = true }
-                                } label: {
-                                    VStack(spacing: 8) {
-                                        if slot == 0, let bottle = store.bottle {
-                                            DrinkIcon(name: bottle.assetName, starter: true).frame(height: 72)
-                                            Text("Starter").font(.caption2)
-                                        } else {
-                                            Image(systemName: slot == 0 ? "plus" : "lock.fill")
-                                                .font(.title3.weight(.light)).frame(height: 72)
-                                            Text(slot == 0 ? "Choose bottle" : "Milestone").font(.caption2)
-                                        }
-                                    }.foregroundStyle(slot == 0 ? Color.primary : Color.secondary)
-                                        .frame(maxWidth: .infinity).frame(height: 110)
-                                        .background(.white.opacity(slot == 0 ? 0.25 : 0.08), in: RoundedRectangle(cornerRadius: 18))
-                                        .overlay(RoundedRectangle(cornerRadius: 18).stroke(.black.opacity(0.10), style: StrokeStyle(lineWidth: 1, dash: slot == 0 ? [] : [4, 4])))
+                            ForEach(BottleCatalog.finishes) { finish in
+                                let unlocked = store.isFinishUnlocked(finish.id)
+                                Button { showingCollection = true } label: {
+                                    VStack(spacing: 6) {
+                                        BottleFinishIcon(asset: store.bottle?.assetName ?? "bottle", finish: finish.id)
+                                            .frame(height: 64)
+                                            .opacity(unlocked ? 1 : 0.45)
+                                            .overlay {
+                                                if !unlocked { Image(systemName: "lock.fill").font(.caption) }
+                                            }
+                                        Text(finish.name).font(.caption)
+                                        Text(finish.milestone).font(.caption2).foregroundStyle(.secondary)
+                                        Text(unlocked ? "Unlocked" : "\(finish.days) day streak")
+                                            .font(.caption2).foregroundStyle(.secondary)
+                                    }
+                                    .foregroundStyle(.primary)
+                                    .frame(maxWidth: .infinity).padding(.vertical, 12)
+                                    .background(.white.opacity(unlocked ? 0.25 : 0.08), in: RoundedRectangle(cornerRadius: 18))
                                 }.buttonStyle(.plain)
-                                    .accessibilityLabel(slot == 0 ? "Choose your starter bottle" : "Locked milestone slot \(slot)")
+                                    .accessibilityLabel("\(finish.name), \(unlocked ? "unlocked" : "requires a \(finish.days) day streak")")
                             }
                         }
-                        Label("More colors & tumblers coming through streak milestones", systemImage: "lock.fill")
+                        Text("Hit your daily goal to earn finishes for every style. Earned finishes stay unlocked.")
                             .font(.caption).foregroundStyle(.secondary)
+                        Text("Month milestones: 30, 90, 180 and 365 consecutive days.")
+                            .font(.caption2).foregroundStyle(.secondary)
+
                     }.padding(20).frame(maxWidth: .infinity, alignment: .leading).modifier(LiquidGlassSurface(shape: .rounded(24)))
 
                     HStack(spacing: 12) {
@@ -66,25 +87,114 @@ struct ProfileView: View {
                             ProfileStat(value: "\(store.currentStreak)", label: "Day streak", icon: "flame.fill")
                         }.buttonStyle(.plain)
                         Button { historyMetric = .average } label: {
-                            ProfileStat(value: "\(store.dailyAverageML) ml", label: "Daily average", icon: "drop.fill")
+                            ProfileStat(value: "\(WaterVolume.label(store.dailyAverageML))", label: "Daily average", icon: "drop.fill")
                         }.buttonStyle(.plain)
                     }
                     HStack(spacing: 12) {
-                        ProfileStat(value: "\(store.dailyGoalML) ml", label: "Daily goal", icon: "target")
+                        ProfileStat(value: "\(store.bestStreak) days", label: "Personal record", icon: "trophy.fill")
                         ProfileStat(value: "\(store.entries.count)", label: "Total logs", icon: "list.bullet")
                     }
                 }.padding()
+                    // Keep the last row reachable above the floating navigation.
+                    .padding(.bottom, 80)
             }
         }
+        .sheet(isPresented: $showingSettings) { SettingsView() }
+        .sheet(isPresented: $showingPro) { ProSubscriptionSheet() }
         .sheet(isPresented: $showingCollection) { BottlePickerSheet() }
         .sheet(item: $historyMetric) { HydrationHistorySheet(metric: $0) }
-        .alert("Room for your progress", isPresented: $showingMilestones) {
-            Button("Got it", role: .cancel) { }
-        } message: {
-            Text("These slots are reserved for future streak and consistency rewards. Your clear starter is available now; milestone unlocking is coming soon.")
-        }
+
     }
 
+    private var memberSinceLabel: some View {
+        Text(auth.user?.memberSince.map {
+            "Member since \($0.formatted(.dateTime.month(.abbreviated).year()))"
+        } ?? "Member since —")
+        .font(.caption).foregroundStyle(.secondary)
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private var membershipBadge: some View {
+        Button { showingPro = true } label: {
+            Text(subscriptions.isPro ? "Pro" : "Free")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(subscriptions.isPro ? Color.blue : Color.secondary)
+                .padding(.horizontal, 10).padding(.vertical, 5)
+                .background(subscriptions.isPro ? Color.blue.opacity(0.1) : Color.white.opacity(0.6), in: Capsule())
+                .fixedSize()
+
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(subscriptions.isPro ? "Pro membership" : "Free membership")
+        .accessibilityHint("View membership details")
+    }
+
+}
+
+private struct ProfileGoalCard: View {
+    let amount: Int
+    let goal: Int
+    private var progress: Double { min(max(Double(amount) / Double(max(goal, 1)), 0), 1) }
+    private var reachedGoal: Bool { goal > 0 && amount >= goal }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            HStack {
+                Text("Daily goal").font(.headline.weight(.regular))
+                Spacer()
+                Label(reachedGoal ? "Complete" : "Today", systemImage: reachedGoal ? "checkmark.circle.fill" : "sun.max")
+                    .font(.caption).foregroundStyle(.blue)
+                    .padding(.horizontal, 12).padding(.vertical, 7)
+                    .background(.blue.opacity(0.07), in: Capsule())
+            }
+
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(WaterVolume.number(goal))
+                    .font(.system(size: 48, weight: .regular, design: .rounded))
+                    .monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
+                Text("fl oz / day").font(.subheadline).foregroundStyle(.secondary)
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text(reachedGoal ? "You’ve reached your goal" : "Today’s progress")
+                    Spacer()
+                    Text("\(Int(progress * 100))%")
+                        .foregroundStyle(.blue).monospacedDigit()
+                }.font(.subheadline)
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(.blue.opacity(0.08))
+                        Capsule().fill(LinearGradient(
+                            colors: [Color(red: 0.88, green: 0.95, blue: 1), .blue],
+                            startPoint: .leading, endPoint: .trailing
+                        ))
+                        .frame(width: geometry.size.width * progress)
+                    }
+                }.frame(height: 14)
+                    .animation(.easeInOut(duration: 0.5), value: progress)
+                    .accessibilityLabel("Today’s goal progress")
+                    .accessibilityValue("\(WaterVolume.number(amount)) of \(WaterVolume.label(goal))")
+            }
+
+            HStack(spacing: 20) {
+                amountLabel(amount, title: "Logged today")
+                Rectangle().fill(.primary.opacity(0.08)).frame(width: 1, height: 36)
+                amountLabel(max(goal - amount, 0), title: "Left to go")
+            }
+        }
+        .padding(24)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .modifier(LiquidGlassSurface(shape: .rounded(28)))
+    }
+
+    private func amountLabel(_ value: Int, title: String) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text("\(WaterVolume.label(value))").font(.title3.weight(.regular)).monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.7)
+            Text(title).font(.caption).foregroundStyle(.secondary)
+        }.frame(maxWidth: .infinity, alignment: .leading)
+    }
 }
 
 private struct ProfileStat: View {
@@ -129,7 +239,7 @@ struct HydrationHistorySheet: View {
             ScrollView {
                 VStack(spacing: 20) {
                     VStack(spacing: 6) {
-                        Text(metric == .streak ? "\(store.currentStreak) days" : "\(store.dailyAverageML) ml")
+                        Text(metric == .streak ? "\(store.currentStreak) days" : "\(WaterVolume.label(store.dailyAverageML))")
                             .font(.system(size: 32, weight: .regular, design: .rounded))
                         Text(metric == .streak ? "Consecutive days reaching your goal" : "7-day average · includes today and days without logs")
                             .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
@@ -157,12 +267,12 @@ struct HydrationHistorySheet: View {
 
                     VStack(alignment: .leading, spacing: 10) {
                         Text(selectedDay.formatted(date: .abbreviated, time: .omitted)).font(.subheadline.weight(.regular))
-                        Text("\(store.amount(on: selectedDay)) ml")
+                        Text("\(WaterVolume.label(store.amount(on: selectedDay)))")
                             .font(.title2.weight(.regular))
                         ProgressView(value: min(Double(store.amount(on: selectedDay)) / Double(max(store.dailyGoalML, 1)), 1)).tint(.black)
                         Text(store.amount(on: selectedDay) == 0 ? "No water logged" : "\(store.entries.filter { calendar.isDate($0.date, inSameDayAs: selectedDay) }.count) water logs")
                             .font(.caption).foregroundStyle(.secondary)
-                        Text("Compared with your current goal of \(store.dailyGoalML) ml")
+                        Text("Compared with your current goal of \(WaterVolume.label(store.dailyGoalML))")
                             .font(.caption2).foregroundStyle(.secondary)
                     }.frame(maxWidth: .infinity, alignment: .leading).padding(20)
                         .modifier(LiquidGlassSurface(shape: .rounded(24)))
@@ -204,7 +314,7 @@ struct HydrationHistorySheet: View {
                                 .background(selected ? Color.black.opacity(0.09) : Color.clear, in: RoundedRectangle(cornerRadius: 12))
                                 .foregroundStyle(future ? Color.gray.opacity(0.4) : Color.black)
                         }.buttonStyle(.plain).disabled(future)
-                            .accessibilityLabel("\(day.formatted(date: .complete, time: .omitted)), \(store.amount(on: day)) milliliters\(reached ? ", goal reached" : "")")
+                            .accessibilityLabel("\(day.formatted(date: .complete, time: .omitted)), \(WaterVolume.label(store.amount(on: day)))\(reached ? ", goal reached" : "")")
                             .accessibilityAddTraits(selected ? .isSelected : [])
                     } else {
                         Color.clear.frame(height: 40)

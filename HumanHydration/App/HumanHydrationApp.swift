@@ -31,15 +31,28 @@ private struct LaunchView: View {
 }
 
 private struct AccountContentView: View {
+    @EnvironmentObject private var auth: AuthService
+    @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var subscriptions: SubscriptionService
     @StateObject private var store: HydrationStore
+    @StateObject private var health: HealthKitService
     private let defaults: UserDefaults
     init(user: AuthUser) {
         let defaults = AccountStorage.defaults(for: user.id)
         self.defaults = defaults
+        _health = StateObject(wrappedValue: HealthKitService(defaults: defaults))
+        _subscriptions = StateObject(wrappedValue: SubscriptionService(accountID: user.id))
         _store = StateObject(wrappedValue: HydrationStore(defaults: defaults, accountID: user.id.uuidString.lowercased()))
     }
     var body: some View {
         AccountRoute().defaultAppStorage(defaults).environmentObject(store)
+            .environmentObject(subscriptions)
+            .environmentObject(health)
+            .task { await health.refresh() }
+            .task { await subscriptions.listen(auth: auth) }
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { Task { await subscriptions.reconcileCurrent(auth: auth); await health.refresh() } }
+            }
             .onDisappear { ReminderService().cancel() }
     }
 }
@@ -373,8 +386,9 @@ struct BundledImage: View {
 
 struct RootView: View {
     @EnvironmentObject private var store: HydrationStore
-    @State private var showingAddWater = false
+    @EnvironmentObject private var subscriptions: SubscriptionService
     @State private var selection = 0
+    @State private var showingPhotoLog = false
 
     var body: some View {
         TabView(selection: $selection) {
@@ -385,36 +399,43 @@ struct RootView: View {
         .tint(.black)
         .onAppear { store.publishWidgetData() }
         .safeAreaInset(edge: .bottom, spacing: 8) {
-            CompactNavigation(selection: $selection) { showingAddWater = true }
+            CompactNavigation(selection: $selection, isPro: subscriptions.isPro) { showingPhotoLog = true }
         }
-        .sheet(isPresented: $showingAddWater) { AddWaterSheet() }
+        .fullScreenCover(isPresented: $showingPhotoLog) {
+            PhotoLogSheet(onLogged: { selection = 0 })
+        }
     }
 }
 
 private struct CompactNavigation: View {
     @Binding var selection: Int
-    let addWater: () -> Void
+    let isPro: Bool
+    let openPhotoLog: () -> Void
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
-            HStack(spacing: 2) {
-                navButton("Home", "house", 0)
-                navButton("Progress", "chart.bar.xaxis", 1)
-                navButton("Profile", "person.crop.circle", 3)
+        HStack(spacing: 2) {
+            navButton("Home", "house", 0)
+            navButton("Insights", "chart.bar.xaxis", 1)
+            if isPro {
+                Button(action: openPhotoLog) {
+                    VStack(spacing: 3) {
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 20, weight: .light))
+                        Text("Scan").font(.system(size: 10, weight: .regular, design: .rounded))
+                    }
+                    .foregroundStyle(.black)
+                    .frame(maxWidth: .infinity).frame(height: 48)
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Scan water with a photo")
             }
-            .padding(.horizontal, 6)
-            .frame(height: 60)
-            .modifier(LiquidGlassNavigation())
-            Button(action: addWater) {
-                Image(systemName: "plus")
-                    .font(.system(size: 25, weight: .light))
-                    .foregroundStyle(.black).frame(width: 60, height: 60)
-            }
-            .buttonStyle(.plain)
-            .modifier(LiquidGlassNavigation())
-            .accessibilityLabel("Add water")
+            navButton("Profile", "person.crop.circle", 3)
         }
-        .frame(maxWidth: 460)
-        .padding(.horizontal, 20).padding(.bottom, 6)
+        .padding(.horizontal, 6)
+        .frame(height: 60)
+        .modifier(LiquidGlassNavigation())
+        .frame(maxWidth: 340)
+        .padding(.horizontal, 32).padding(.bottom, 6)
         .frame(maxWidth: .infinity)
     }
     private func navButton(_ title: String, _ icon: String, _ tag: Int) -> some View {
@@ -445,44 +466,50 @@ private struct LiquidGlassNavigation: ViewModifier {
     }
 }
 
-private struct AddWaterSheet: View {
+struct AddWaterSheet: View {
     @EnvironmentObject private var store: HydrationStore
     @Environment(\.dismiss) private var dismiss
-    @State private var amount: Double = 250
-    private let maximumAmount = 7_570.0
-
+    @State private var amountText = "8"
+    private var amount: Int? {
+        return WaterVolume.milliliters(amountText)
+    }
     var body: some View {
-        VStack(alignment: .leading, spacing: 22) {
-            Capsule().fill(.secondary.opacity(0.25)).frame(width: 38, height: 5).frame(maxWidth: .infinity)
-            Text("Add water").font(.title2.weight(.regular))
-            VStack(spacing: 8) {
-                DrinkIcon(name: amountAssetName)
-                    .frame(width: 82, height: 108)
-                Text("\(Int(amount)) ml").font(.system(size: 42, weight: .regular, design: .rounded))
-                Text("about \(Int(amount * 0.033814)) fl oz").font(.subheadline).foregroundStyle(.secondary)
-            }.frame(maxWidth: .infinity)
-            VStack(spacing: 6) {
-                Slider(value: $amount, in: 50...maximumAmount, step: 10).tint(.blue)
-                HStack { Text("50 ml"); Spacer(); Text("7,570 ml · 2 gal") }.font(.caption).foregroundStyle(.secondary)
-            }
+        VStack(spacing: 24) {
+            Text("Enter amount").font(.title2.weight(.regular))
+            HStack(spacing: 20) {
+                Button { adjust(-1) } label: {
+                    Image(systemName: "minus").frame(width: 48, height: 48)
+                        .modifier(LiquidGlassSurface(shape: .capsule))
+                }.disabled((amount ?? 0) <= 12).accessibilityLabel("Decrease by one fluid ounce")
+                VStack(spacing: 4) {
+                    TextField("Amount", text: $amountText)
+                        .keyboardType(.decimalPad).multilineTextAlignment(.center)
+                        .font(.system(size: 38, weight: .regular, design: .rounded))
+                        .accessibilityLabel("Water amount in fluid ounces")
+                    Text("fl oz").font(.subheadline).foregroundStyle(.secondary)
+                }
+                Button { adjust(1) } label: {
+                    Image(systemName: "plus").frame(width: 48, height: 48)
+                        .modifier(LiquidGlassSurface(shape: .capsule))
+                }.disabled((amount ?? 0) >= 7567).accessibilityLabel("Increase by one fluid ounce")
+            }.buttonStyle(.plain)
+            Text("Adjust by 1 fl oz, or tap the number to type.")
+                .font(.caption).foregroundStyle(.secondary)
             Button {
-                store.addWater(Int(amount)); dismiss()
+                guard let amount else { return }
+                store.addWater(amount); dismiss()
             } label: {
-                Text("Log water").font(.headline.weight(.regular)).frame(maxWidth: .infinity).padding(.vertical, 16)
-            }.buttonStyle(.borderedProminent).tint(.black)
-            Spacer()
-        }.padding(24).presentationDetents([.medium]).presentationDragIndicator(.hidden)
+                Text("Log water").frame(maxWidth: .infinity).frame(height: 46)
+                    .background(Color.blue.opacity(0.07), in: Capsule())
+                    .modifier(LiquidGlassSurface(shape: .capsule))
+            }.buttonStyle(.plain).disabled(amount == nil)
+        }.padding(24)
+            .presentationDetents([.height(310), .medium])
+            .presentationDragIndicator(.visible)
             .presentationBackground { HydrationTheme.canvas }
     }
-
-    private var amountAssetName: String {
-        switch amount {
-        case 0..<400: return "glass"
-        case 400..<700: return "bottle"
-        case 700..<1200: return "gatorade"
-        case 1200..<2000: return "stanley"
-        default: return "gallon"
-        }
+    private func adjust(_ delta: Int) {
+        amountText = String(min(255.9, max(0.4, (Double(amountText.replacingOccurrences(of: ",", with: ".")) ?? 8) + Double(delta))))
     }
 }
 

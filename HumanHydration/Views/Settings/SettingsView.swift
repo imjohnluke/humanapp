@@ -5,6 +5,7 @@ struct SettingsView: View {
     @EnvironmentObject private var store: HydrationStore
     @EnvironmentObject private var auth: AuthService
     @Environment(\.dismiss) private var dismiss
+    @State private var showingBottlePicker = false
     @State private var remindersEnabled = false
     @State private var reminderTime = Calendar.current.date(from: DateComponents(hour: 10)) ?? .now
     @State private var savingReminder = false
@@ -13,38 +14,44 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Profile") {
+                Section("Name") {
                     TextField("Your name", text: $store.displayName).textContentType(.name)
                 }
+                if let email = auth.user?.email {
+                    Section {
+                        LabeledContent("Email", value: email)
+                    }
+                }
                 Section("Daily goal") {
-                    Stepper("\(store.dailyGoalML) ml", value: $store.dailyGoalML, in: 500...6000, step: 100)
+                    Stepper("\(WaterVolume.label(store.dailyGoalML))", value: Binding(
+                        get: { Int(WaterVolume.ounces(store.dailyGoalML).rounded()) },
+                        set: { store.dailyGoalML = Int((Double($0) * WaterVolume.mlPerOunce).rounded()) }
+                    ), in: 17...202, step: 1)
                 }
                 Section("Bottle") {
-                    Toggle("I use a water bottle", isOn: Binding(get: { store.bottle != nil }, set: { store.bottle = $0 ? WaterBottle() : nil }))
-                    if let bottle = store.bottle { Text("\(bottle.name) · \(bottle.capacityML) ml").foregroundStyle(.secondary) }
+                    Button { showingBottlePicker = true } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(store.bottle.map { BottleCatalog.displayName($0.name) } ?? "Choose your bottle")
+                                if let bottle = store.bottle {
+                                    Text(BottleCatalog.sizeLabel(capacityML: bottle.capacityML))
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
+                        }.foregroundStyle(.primary)
+                    }
                 }
                 Section {
                     Link(destination: URL(string: "https://apps.apple.com/account/subscriptions")!) {
                         Label("Manage subscription", systemImage: "creditcard")
                     }
-                } header: { Text("Subscription") } footer: {
-                    Text("Manage subscriptions billed through Apple. No paid plan is configured in human yet.")
                 }
-                Section("Personalize") {
+                Section {
                     NavigationLink { WidgetGalleryView() } label: {
                         Label("Home & Lock Screen widgets", systemImage: "square.grid.2x2")
                     }
-                }
-                Section {
-                    if let email = auth.user?.email {
-                        LabeledContent("Signed in as", value: email)
-                    }
-                    Button("Log out", role: .destructive) {
-                        dismiss()
-                        auth.signOut()
-                    }
-                } header: { Text("Account") } footer: {
-                    Text("Logs remain on this device. Widget data is hidden while logged out.")
                 }
                 Section {
                     Toggle("Daily reminder", isOn: $remindersEnabled)
@@ -61,15 +68,32 @@ struct SettingsView: View {
                 } header: { Text("Reminders") } footer: {
                     Text("One optional reminder each day. Logging out turns it off.")
                 }
+                Section {
+                    HealthConnectionCard()
+                }
                 Section("About") {
-                    LabeledContent("App", value: "human app")
+                    LabeledContent("App", value: "Human Hydration")
                     LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0")
                     Text("Hydration goals are editable tracking targets, not medical advice. Follow any fluid limits given by your clinician.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
+                Section {
+                    Button(role: .destructive) {
+                        dismiss()
+                        auth.signOut()
+                    } label: {
+                        Text("Log out").font(.headline.weight(.regular))
+                            .frame(maxWidth: .infinity).padding(.vertical, 8)
+                    }
+                    .buttonStyle(.borderedProminent).tint(.red)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
+                }
             }.navigationTitle(title)
                 .scrollContentBackground(.hidden)
                 .background(HydrationTheme.canvas.ignoresSafeArea())
+                .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+                .sheet(isPresented: $showingBottlePicker) { BottlePickerSheet() }
         }
         .task {
             let requests = await UNUserNotificationCenter.current().pendingNotificationRequests()
@@ -90,7 +114,7 @@ struct SettingsView: View {
                 let service = ReminderService()
                 guard try await service.requestPermission() else {
                     remindersEnabled = false
-                    reminderError = "Notifications are off. Enable them for human app in iPhone Settings."
+                    reminderError = "Notifications are off. Enable them for Human Hydration in iPhone Settings."
                     return
                 }
                 guard auth.isAuthenticated else { return }
