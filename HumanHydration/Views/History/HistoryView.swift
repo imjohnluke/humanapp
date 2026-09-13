@@ -15,10 +15,10 @@ struct HistoryView: View {
                         HStack {
                             ProgressView(value: Double(amount), total: Double(store.dailyGoalML)).frame(width: 90)
                             Spacer()
-                            Text("\(amount) ml").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                            Text("\(WaterVolume.label(amount))").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                         }
                         ForEach(dayEntries) { entry in
-                            HStack { Image(systemName: "drop.fill").foregroundStyle(.blue); Text("\(entry.amountML) ml"); Spacer(); Text(entry.date, format: .dateTime.hour().minute()).font(.caption).foregroundStyle(.secondary) }
+                            HStack { Image(systemName: "drop.fill").foregroundStyle(.blue); Text("\(WaterVolume.label(entry.amountML))"); Spacer(); Text(entry.date, format: .dateTime.hour().minute()).font(.caption).foregroundStyle(.secondary) }
                         }
                     } header: {
                         Text(date, format: .dateTime.weekday(.abbreviated).month(.abbreviated).day())

@@ -2,23 +2,27 @@ import SwiftUI
 
 struct OnboardingView: View {
     @EnvironmentObject private var store: HydrationStore
+    @EnvironmentObject private var health: HealthKitService
     @AppStorage("hasCompletedOnboarding") private var completed = false
     @AppStorage("profileAge") private var savedAge = 25
     @AppStorage("profileHeightCM") private var savedHeight = 170
     @AppStorage("profileWorkoutsPerWeek") private var savedWorkouts = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var planProgress = 0.0
     @State private var step = 0
     @State private var name = ""
     @State private var age = 25
     @State private var height = 170
     @State private var workouts = 0
     @State private var goal = 2000.0
+    @State private var drinkCapacity = ""
     @State private var selectedBottle: String?
     @FocusState private var nameFocused: Bool
 
     private let bottles: [(asset: String, name: String, capacity: Int)] = BottleCatalog.options.map { ($0.0, $0.1, $0.2) }
     private let titles = ["Your name?", "Your age?", "Your height?",
                           "How often do you work out?", "Your daily goal?",
-                          "What do you drink out of?"]
+                          "What do you drink out of?", "Make it personal", "Creating your personal hydration plan", "Your hydration plan"]
 
     var body: some View {
         GeometryReader { geometry in
@@ -41,21 +45,37 @@ struct OnboardingView: View {
             }
             .safeAreaInset(edge: .bottom) {
                 VStack(spacing: 12) {
+                    if step != 7 {
                     Button(action: advance) {
-                        Text(step == 5 ? "Let’s go" : "Continue")
+                        Text(step == 8 ? "Start my plan" : step == 6 ? "Create my plan" : "Continue")
                             .font(.headline.weight(.regular))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.black)
-                    .disabled(step == 0 && name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(health.busy || (step == 0 && name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) || (step == 5 && selectedBottle != nil && WaterVolume.milliliters(drinkCapacity, minimum: 40) == nil))
+                    }
                 }
                 .frame(maxWidth: 460)
                 .padding(.horizontal, 28)
                 .padding(.bottom, 12)
                 .frame(maxWidth: .infinity)
             }
+        }
+        .task(id: step) {
+            guard step == 7 else { return }
+            planProgress = 0
+            do {
+                for stage in 1...3 {
+                    try await Task.sleep(for: .milliseconds(650))
+                    withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.5)) {
+                        planProgress = Double(stage) / 3
+                    }
+                }
+                try await Task.sleep(for: .milliseconds(350))
+                withAnimation(reduceMotion ? nil : .easeInOut) { step = 8 }
+            } catch { }
         }
         .multilineTextAlignment(.center)
         .onAppear {
@@ -106,14 +126,17 @@ struct OnboardingView: View {
         case 4:
             Text(age >= 18 ? "Recommended starting point" : "Choose a goal with a parent or clinician")
                 .font(.subheadline).foregroundStyle(.secondary)
-            Text("\(Int(goal)) ml")
+            Text("\(WaterVolume.label(Int(goal)))")
                 .font(.system(size: 38, weight: .regular, design: .rounded))
                 .monospacedDigit()
-            Slider(value: $goal, in: 500...5000, step: 100)
+            Slider(value: Binding(
+                get: { goal / WaterVolume.mlPerOunce },
+                set: { goal = ($0 * WaterVolume.mlPerOunce).rounded() }
+            ), in: 17...169, step: 1)
                 .tint(.black)
-                .accessibilityLabel("Daily hydration goal in milliliters")
+                .accessibilityLabel("Daily hydration goal in fluid ounces")
             Text(age >= 18
-                 ? "A general adult starting point of 2,000 ml of fluids per day. Adjust it to suit you."
+                 ? "A general adult starting point of about 68 fl oz of fluids per day. Adjust it to suit you."
                  : "Children’s needs vary. This is an editable tracking goal, not a recommendation.")
                 .font(.subheadline).foregroundStyle(.secondary)
             if workouts > 0 {
@@ -125,13 +148,14 @@ struct OnboardingView: View {
             Link("About this recommendation",
                  destination: URL(string: "https://www.kch.nhs.uk/patients-and-visitors/patients/hydration-matters/")!)
                 .font(.caption)
-        default:
+        case 5:
             Text("Pick your everyday go-to.")
                 .font(.subheadline).foregroundStyle(.secondary)
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
                 ForEach(bottles, id: \.asset) { bottle in
                     Button {
                         selectedBottle = bottle.asset
+                        drinkCapacity = WaterVolume.input(bottle.capacity)
                     } label: {
                         VStack(spacing: 8) {
                             DrinkIcon(name: bottle.asset).frame(height: 92)
@@ -147,13 +171,89 @@ struct OnboardingView: View {
                     .accessibilityAddTraits(selectedBottle == bottle.asset ? .isSelected : [])
                 }
             }
+            if selectedBottle != nil {
+                HStack {
+                    Text("Full capacity")
+                    TextField("fl oz", text: $drinkCapacity).keyboardType(.decimalPad)
+                        .multilineTextAlignment(.trailing)
+                    Text("fl oz")
+                }.padding(14).modifier(LiquidGlassSurface(shape: .rounded(16)))
+                Text("This becomes your one-tap drink on Home. Sizes are approximate—check your label and adjust if you know it.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Button("I use different ones") { selectedBottle = nil }
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+        case 6:
+            HealthConnectionCard()
+                .padding(22).modifier(LiquidGlassSurface(shape: .rounded(28)))
+            Text("You can skip this and connect later in Settings.")
+                .font(.caption).foregroundStyle(.secondary)
+        case 7:
+            ZStack {
+                Circle().stroke(.blue.opacity(0.1), lineWidth: 12)
+                Circle().trim(from: 0, to: planProgress)
+                    .stroke(LinearGradient(colors: [.cyan.opacity(0.4), .blue], startPoint: .top, endPoint: .bottom),
+                            style: StrokeStyle(lineWidth: 12, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                Image(systemName: "drop.fill").font(.system(size: 48)).foregroundStyle(.blue)
+            }.frame(width: 160, height: 160).padding(.vertical, 24)
+                .accessibilityLabel("Creating hydration plan")
+            Text(planProgress < 0.34 ? "Adding your daily goal" : planProgress < 0.67 ? "Building around your routine" : "Getting your plan ready")
+                .font(.subheadline).foregroundStyle(.secondary)
+                .accessibilityAddTraits(.updatesFrequently)
+        default:
+            VStack(alignment: .leading, spacing: 18) {
+                Text("\(name.trimmingCharacters(in: .whitespacesAndNewlines)), let’s make it a habit.")
+                    .font(.title3.weight(.regular))
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(WaterVolume.label(store.dailyGoalML)).font(.title.weight(.regular))
+                        Text("Your daily tracking goal").font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Image(systemName: "drop.fill").font(.largeTitle).foregroundStyle(.blue)
+                }.padding(20).modifier(LiquidGlassSurface(shape: .rounded(22)))
+                if let drink = store.selectedDrink {
+                    Label("Ready to log: \(drink.name) · \(BottleCatalog.sizeLabel(capacityML: drink.capacityML))", systemImage: "checkmark.circle")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                }
+                if health.enabled { HealthRoutineCard() }
+                Text("Good moments to check in").font(.headline.weight(.regular))
+                planMoment("Start your morning", "Pair a water check-in with breakfast or your morning routine.", icon: "sunrise.fill", color: .orange)
+                planMoment("With your meals", "Use lunch and dinner as reminders to pause for a drink and log it.", icon: "fork.knife", color: .blue)
+                if workouts > 0 {
+                    planMoment("After a workout", "On your \(workouts) workout days each week, check in after exercising: did you hydrate?", icon: "figure.run", color: .purple)
+                } else {
+                    planMoment("During an afternoon break", "Keep your usual glass or bottle nearby so it’s easy to remember.", icon: "sun.max.fill", color: .purple)
+                }
+                Text("These are flexible habit cues, not fixed drinking times. Adjust your goal to your needs and follow any fluid limits from your clinician.")
+                    .font(.caption).foregroundStyle(.secondary)
+                if age < 18 {
+                    Text("Review your goal and routine with a parent or clinician.").font(.caption).foregroundStyle(.secondary)
+                }
+                Link("About healthy hydration", destination: URL(string: "https://www.nhs.uk/live-well/eat-well/food-guidelines-and-food-labels/water-drinks-nutrition/")!)
+                    .font(.caption)
+            }.multilineTextAlignment(.leading)
+
         }
     }
 
+    private func planMoment(_ title: String, _ detail: String, icon: String, color: Color) -> some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: icon).foregroundStyle(color).frame(width: 28)
+            VStack(alignment: .leading, spacing: 5) {
+                Text(title).font(.subheadline.weight(.medium))
+                Text(detail).font(.caption).foregroundStyle(.secondary)
+            }
+        }.frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16).modifier(LiquidGlassSurface(shape: .rounded(20)))
+    }
+
     private func advance() {
+        if step == 8 { completed = true; return }
+        guard step != 7 else { return }
+        if step == 6 { withAnimation(reduceMotion ? nil : .easeInOut) { step = 7 }; return }
         guard step != 0 || !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         nameFocused = false
         if step < 5 {
@@ -166,12 +266,12 @@ struct OnboardingView: View {
         savedWorkouts = workouts
         store.dailyGoalML = Int(goal)
         if let bottle = bottles.first(where: { $0.asset == selectedBottle }) {
-            store.bottle = WaterBottle(name: bottle.name, capacityML: bottle.capacity,
+            store.selectBottle(WaterBottle(name: bottle.name, capacityML: WaterVolume.milliliters(drinkCapacity, minimum: 40) ?? bottle.capacity,
                                       assetName: bottle.asset,
-                                      colorName: BottleCatalog.startingColor(bottle.asset))
+                                      colorName: BottleCatalog.startingColor(bottle.asset)))
         } else {
             store.bottle = nil
         }
-        completed = true
+        step = 6
     }
 }

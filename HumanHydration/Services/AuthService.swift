@@ -5,6 +5,21 @@ import CryptoKit
 struct AuthUser: Decodable, Equatable {
     let id: UUID
     let email: String?
+    let createdAt: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, email
+        case createdAt = "created_at"
+    }
+
+    var memberSince: Date? {
+        guard let createdAt else { return nil }
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = formatter.date(from: createdAt) { return date }
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter.date(from: createdAt)
+    }
 }
 
 @MainActor
@@ -94,7 +109,7 @@ final class AuthService: ObservableObject {
             guard operation == generation else { return }
             recoveryVerifier = verifier
             recoveryEmail = clean
-            confirmationMessage = "If that account exists, we’ve sent a reset link. Open it on this device without quitting human app."
+            confirmationMessage = "If that account exists, we’ve sent a reset link. Open it on this device without quitting Human Hydration."
         } catch {
             if operation == generation { errorMessage = friendlyMessage(for: error) }
         }
@@ -206,6 +221,23 @@ final class AuthService: ObservableObject {
         errorMessage = nil
         confirmationMessage = nil
         user = verified
+    }
+
+    /// Return a verified, refreshed session for authenticated app API calls.
+    func accessTokenForAPI() async throws -> String {
+        guard let expectedID = user?.id, let saved = try vault.read() else { throw AuthError.invalidResponse }
+        let operation = generation
+        do {
+            let verified: AuthUser = try await request(path: "/auth/v1/user", method: "GET", token: saved.accessToken)
+            guard operation == generation, user?.id == expectedID, verified.id == expectedID else { throw CancellationError() }
+            return saved.accessToken
+        } catch AuthError.http(let code, _) where code == 401 || code == 403 {
+            let response: AuthResponse = try await request(path: "/auth/v1/token?grant_type=refresh_token", body: ["refresh_token": saved.refreshToken])
+            guard response.user?.id == expectedID, operation == generation else { throw AuthError.invalidResponse }
+            try await accept(response, operation: operation)
+            guard let refreshed = try vault.read(), user?.id == expectedID else { throw AuthError.invalidResponse }
+            return refreshed.accessToken
+        }
     }
 
     func signOut() {

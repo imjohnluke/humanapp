@@ -1,6 +1,12 @@
 import Foundation
 
 enum AppConfig {
+    // Configure a published privacy policy before enabling paid purchases.
+    static var privacyPolicyURL: URL? {
+        guard let value = Bundle.main.object(forInfoDictionaryKey: "PrivacyPolicyURL") as? String,
+              let url = URL(string: value), url.scheme == "https", url.host != nil else { return nil }
+        return url
+    }
     static let emailRedirectURL = URL(string: "humanhydration://email-confirmed")!
     static let supabaseURL = URL(string: "https://vcjklnjczsgyxllgehin.supabase.co")!
 

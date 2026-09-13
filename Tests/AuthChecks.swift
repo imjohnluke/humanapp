@@ -142,6 +142,30 @@ enum AuthChecks {
         precondition(!recovery.needsPasswordReset && !recovery.isAuthenticated && recovery.confirmationMessage != nil)
         try await Task.sleep(nanoseconds: 100_000_000)
 
+        AuthMockProtocol.handler = { request in
+            request.url!.path == "/auth/v1/user" ? (200, userJSON(userA)) : (200, tokenJSON(userA))
+        }
+        let photoAuth = makeAuth()
+        let photoSignedIn = await photoAuth.signIn(email: "test@example.com", password: "password123")
+        precondition(photoSignedIn)
+        let photoToken = try await photoAuth.accessTokenForAPI()
+        precondition(photoToken == "mock-access")
+        var photoUserRequests = 0
+        AuthMockProtocol.handler = { request in
+            if request.url!.path == "/auth/v1/user" {
+                photoUserRequests += 1
+                return photoUserRequests == 1 ? (401, "{}") : (200, userJSON(userA))
+            }
+            precondition(request.url!.query == "grant_type=refresh_token")
+            return (200, tokenJSON(userA))
+        }
+        _ = try await photoAuth.accessTokenForAPI()
+        precondition(photoUserRequests == 2, "Photo API refresh revalidates identity")
+        AuthMockProtocol.handler = { _ in (200, userJSON(userB)) }
+        do { _ = try await photoAuth.accessTokenForAPI(); preconditionFailure("Must reject switched identity") }
+        catch { }
+        print("PASS: photo API session validation, refresh, and identity mismatch")
+
         let a = AccountStorage.defaults(for: userA)
         let b = AccountStorage.defaults(for: userB)
         defer {
