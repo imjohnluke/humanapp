@@ -136,7 +136,7 @@ struct WaterBottle: Identifiable, Codable {
     var assetName: String
     var colorName: String
 
-    init(name: String = "Smartwater", capacityML: Int = 1000, assetName: String = "bottle", colorName: String = "clear") {
+    init(name: String = "Glass of water", capacityML: Int = 250, assetName: String = "glass", colorName: String = "clear") {
         self.id = UUID()
         self.name = name
         self.capacityML = capacityML
