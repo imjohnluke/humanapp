@@ -283,6 +283,8 @@ private struct DayStrip: View {
                         }
                     }
                 }
+                .frame(height: 76)
+                .padding(.vertical, 4)
                 .onAppear { proxy.scrollTo(0, anchor: .trailing) }
                 Text("Swipe to browse previous days")
                     .font(.caption2).foregroundStyle(.secondary)
