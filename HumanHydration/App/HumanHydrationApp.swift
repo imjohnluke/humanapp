@@ -69,9 +69,63 @@ private struct AccountRoute: View {
     }
 }
 
+/// Keeps the native authorization request alive while the glass button presents Apple’s sheet.
+@MainActor
+private final class AppleSignInCoordinator: NSObject, ObservableObject, ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
+    @Published private(set) var isPresenting = false
+    private var controller: ASAuthorizationController?
+    private var window: UIWindow?
+    private var completion: ((Result<ASAuthorization, Error>) -> Void)?
+
+    func start(nonce: String, completion: @escaping (Result<ASAuthorization, Error>) -> Void) {
+        guard !isPresenting else { return }
+        guard let window = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .filter({ $0.activationState == .foregroundActive })
+            .flatMap(\.windows).first(where: \.isKeyWindow) else {
+            completion(.failure(NSError(domain: "HumanHydration.AppleSignIn", code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Please try Apple sign-in again once the app is active."])))
+            return
+        }
+        self.window = window
+        self.completion = completion
+        isPresenting = true
+        let request = ASAuthorizationAppleIDProvider().createRequest()
+        request.requestedScopes = [.fullName, .email]
+        request.nonce = SHA256.hash(data: Data(nonce.utf8)).map { String(format: "%02x", $0) }.joined()
+        let controller = ASAuthorizationController(authorizationRequests: [request])
+        self.controller = controller
+        controller.delegate = self
+        controller.presentationContextProvider = self
+        controller.performRequests()
+    }
+
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        // Retained before performRequests and released only after the result arrives.
+        window!
+    }
+
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+        finish(.success(authorization))
+    }
+
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+        finish(.failure(error))
+    }
+
+    private func finish(_ result: Result<ASAuthorization, Error>) {
+        let callback = completion
+        completion = nil
+        controller = nil
+        window = nil
+        isPresenting = false
+        callback?(result)
+    }
+}
+
 private struct SignInView: View {
     @EnvironmentObject private var auth: AuthService
-    @State private var appleNonce: String?
+    @StateObject private var appleSignIn = AppleSignInCoordinator()
     @State private var logoVisible = false
     @State private var emailStep: EmailStep = .email
     @State private var emailMode: EmailMode = .signUp
@@ -101,32 +155,42 @@ private struct SignInView: View {
                     .opacity(logoVisible ? 1 : 0)
                     .offset(y: logoVisible ? 0 : 8)
                 Spacer()
-                ZStack {
-                    HStack(spacing: 10) { Image(systemName: "apple.logo").font(.title3); Text("Continue with Apple").font(.headline.weight(.regular)) }.foregroundStyle(.white)
-                        .frame(maxWidth: .infinity).frame(height: 54).modifier(LiquidGlassSurface(shape: .capsule))
-                    SignInWithAppleButton(.continue) { request in
-                        let nonce = UUID().uuidString + UUID().uuidString
-                        appleNonce = nonce
-                        request.nonce = SHA256.hash(data: Data(nonce.utf8)).map { String(format: "%02x", $0) }.joined()
-                        request.requestedScopes = [.fullName, .email]
-                    } onCompletion: { result in
+                Text(emailMode == .signUp ? "Create your free account" : "Welcome back")
+                    .font(.headline).foregroundStyle(.white)
+                Button {
+                    focusedField = nil
+                    auth.errorMessage = nil
+                    auth.confirmationMessage = nil
+                    let nonce = UUID().uuidString + UUID().uuidString
+                    appleSignIn.start(nonce: nonce) { result in
                         switch result {
                         case .success(let authorization):
                             guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
                                   let data = credential.identityToken,
-                                  let token = String(data: data, encoding: .utf8), let nonce = appleNonce else {
+                                  let token = String(data: data, encoding: .utf8) else {
                                 auth.errorMessage = "Apple didn’t return a valid sign-in token. Please try again."
                                 return
                             }
-                            appleNonce = nil
                             Task { await auth.signInWithApple(idToken: token, nonce: nonce) }
                         case .failure(let error):
-                            appleNonce = nil
-                            if (error as NSError).code != ASAuthorizationError.canceled.rawValue { auth.errorMessage = error.localizedDescription }
+                            if (error as? ASAuthorizationError)?.code != .canceled {
+                                auth.errorMessage = error.localizedDescription
+                            }
                         }
                     }
-                    .signInWithAppleButtonStyle(.black).opacity(0.01).frame(height: 54).clipShape(Capsule())
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "apple.logo").font(.title3)
+                        Text("Continue with Apple").font(.headline.weight(.regular))
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity).frame(height: 54)
+                    .modifier(LiquidGlassSurface(shape: .capsule))
+                    .contentShape(Capsule())
                 }
+                .buttonStyle(.plain)
+                .disabled(auth.isLoading || appleSignIn.isPresenting)
+                .accessibilityIdentifier("appleSignInButton")
 
                 emailForm
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -287,7 +351,7 @@ private struct SignInView: View {
         switch emailStep {
         case .email: return "Continue"
         case .password: return emailMode == .signUp ? "Continue" : "Sign in"
-        case .confirmation: return "Create account"
+        case .confirmation: return "Create free account"
         }
     }
 }

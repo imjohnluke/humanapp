@@ -192,6 +192,14 @@ final class AuthService: ObservableObject {
 
     func signInWithApple(idToken: String, nonce: String) async {
         guard !isLoading, !isAuthenticated else { return }
+        guard !idToken.isEmpty, !nonce.isEmpty else {
+            errorMessage = "Apple didn’t return a valid sign-in token. Please try again."
+            return
+        }
+        cancelPasswordReset()
+        vault.clear()
+        removeLegacyTokens()
+        confirmationMessage = nil
         isLoading = true
         errorMessage = nil
         let operation = generation

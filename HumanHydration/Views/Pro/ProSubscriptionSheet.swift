@@ -2,6 +2,7 @@ import SwiftUI
 import StoreKit
 
 struct ProSubscriptionSheet: View {
+    var isOnboarding = false
     @EnvironmentObject private var auth: AuthService
     @EnvironmentObject private var subscriptions: SubscriptionService
     @Environment(\.dismiss) private var dismiss
@@ -11,7 +12,13 @@ struct ProSubscriptionSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    Text("Human Pro").font(.largeTitle.weight(.regular))
+                    if isOnboarding {
+                        Text("YOUR PLAN IS READY").font(.caption.weight(.semibold)).tracking(2).foregroundStyle(.blue)
+                    }
+                    Text(isOnboarding ? "Make it a habit with Pro" : "Human Pro").font(.largeTitle.weight(.regular))
+                    if isOnboarding {
+                        Text("Your free account is ready. Go further with Human Pro.").font(.headline.weight(.regular))
+                    }
                     Text("See the patterns behind your hydration and keep today’s progress visible at a glance.")
                         .foregroundStyle(.secondary)
                     Label("Advanced hydration insights", systemImage: "chart.bar.xaxis")
@@ -25,7 +32,7 @@ struct ProSubscriptionSheet: View {
                             Button { Task { await subscriptions.purchase(product, auth: auth) } } label: {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 5) {
-                                        Text(product.displayName).font(.headline.weight(.regular))
+                                        Text("Get Human Pro").font(.headline.weight(.regular))
                                         Text("\(product.displayPrice) / month").font(.subheadline)
                                     }
                                     Spacer()
@@ -38,7 +45,11 @@ struct ProSubscriptionSheet: View {
                         Text("Pro subscriptions are getting ready. Purchasing isn’t available yet.").foregroundStyle(.secondary)
                         Button("Check subscription again") { Task { await subscriptions.loadProducts(auth: auth) } }
                     }
-                    if subscriptions.isBusy { ProgressView() }
+                    if subscriptions.purchasesAvailable && AppConfig.privacyPolicyURL != nil && !subscriptions.products.isEmpty && !subscriptions.isPro {
+                        Text("Monthly subscription. Payment is charged to your Apple Account. Renews automatically unless canceled at least 24 hours before renewal. Manage or cancel in Settings.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    if subscriptions.isBusy { ProgressView("Loading Pro…") }
                     if let message = subscriptions.message { Text(message).font(.subheadline).foregroundStyle(.secondary) }
                     Button("Restore purchases") { Task { await subscriptions.restore(auth: auth) } }
                         .disabled(subscriptions.isBusy)
@@ -49,9 +60,25 @@ struct ProSubscriptionSheet: View {
                 }.padding(24)
             }
             .background(HydrationTheme.canvas.ignoresSafeArea())
-            .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
+            .safeAreaInset(edge: .bottom) {
+                if isOnboarding {
+                    Button(subscriptions.isPro ? "Start my Pro plan" : "Continue with free") { dismiss() }
+                        .font(.headline)
+                        .frame(maxWidth: .infinity).padding(18)
+                        .background(HydrationTheme.canvas)
+                }
+            }
+            .toolbar {
+                if !isOnboarding {
+                    ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
+                }
+            }
         }
+        .interactiveDismissDisabled(isOnboarding)
         .task { await subscriptions.loadProducts(auth: auth) }
+        .onChange(of: subscriptions.isPro) { _, isPro in
+            if isOnboarding && isPro { dismiss() }
+        }
         .manageSubscriptionsSheet(isPresented: $showingManage)
     }
 }

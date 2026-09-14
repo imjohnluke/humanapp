@@ -95,6 +95,34 @@ enum AuthChecks {
         // Allow the best-effort server logout request to finish before installing another handler.
         try await Task.sleep(nanoseconds: 100_000_000)
 
+        // Apple ID-token login must verify the returned identity before saving a session.
+        AuthMockProtocol.handler = { request in
+            if request.url!.path == "/auth/v1/user" { return (200, userJSON(userA)) }
+            precondition(request.url!.query == "grant_type=id_token")
+            return (200, tokenJSON(userA))
+        }
+        let apple = makeAuth()
+        await apple.signInWithApple(idToken: "mock-apple-token", nonce: "mock-nonce")
+        precondition(apple.user?.id == userA && vault.value != nil && !apple.isLoading)
+        vault.clear()
+
+        AuthMockProtocol.handler = { request in
+            if request.url!.path == "/auth/v1/user" { return (200, userJSON(userB)) }
+            return (200, tokenJSON(userA))
+        }
+        let appleMismatch = makeAuth()
+        await appleMismatch.signInWithApple(idToken: "mock-apple-token", nonce: "mock-nonce")
+        precondition(!appleMismatch.isAuthenticated && vault.value == nil && !appleMismatch.isLoading)
+
+        AuthMockProtocol.handler = { _ in (400, "{\"msg\":\"Invalid Apple token\"}") }
+        let appleRejected = makeAuth()
+        vault.value = StoredSession(accessToken: "stale", refreshToken: "stale")
+        await appleRejected.signInWithApple(idToken: "rejected-token", nonce: "mock-nonce")
+        precondition(!appleRejected.isAuthenticated && appleRejected.errorMessage != nil && !appleRejected.isLoading && vault.value == nil)
+        AuthMockProtocol.handler = { _ in preconditionFailure("Empty Apple credentials must not reach the server") }
+        await appleRejected.signInWithApple(idToken: "", nonce: "")
+        precondition(!appleRejected.isLoading && !appleRejected.isAuthenticated)
+
         var userRequests = 0
         vault.value = StoredSession(accessToken: "expired", refreshToken: "refresh")
         AuthMockProtocol.handler = { request in

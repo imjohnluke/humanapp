@@ -69,8 +69,8 @@ struct TodayView: View {
 struct BottlePickerSheet: View {
     @EnvironmentObject private var store: HydrationStore
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedAsset = "bottle"
-    @State private var page = 2
+    @State private var selectedAsset = "glass"
+    @State private var page = 1
     @State private var lockedColor: String?
     @State private var previewColor = "clear"
 
@@ -183,7 +183,7 @@ struct BottlePickerSheet: View {
                     if let bottle = store.bottle, options.contains(where: { $0.0 == bottle.assetName }) {
                         selectedAsset = bottle.assetName
                         previewColor = store.isFinishUnlocked(bottle.colorName) ? bottle.colorName : "clear"
-                        page = (options.firstIndex(where: { $0.0 == bottle.assetName }) ?? 1) + 1
+                        page = (options.firstIndex(where: { $0.0 == bottle.assetName }) ?? 0) + 1
                     }
                 }
         }.presentationDetents([.large])
@@ -221,45 +221,71 @@ private struct BundledLogoImage: View {
 private struct DayStrip: View {
     @EnvironmentObject private var store: HydrationStore
     @Binding var selectedDate: Date
-    private let days = Array(-5...0)
+    @State private var daysBack = 365
+    private var today: Date { Calendar.current.startOfDay(for: .now) }
+    private var historyDays: Int {
+        let earliest = store.entries.map(\.date).min() ?? today
+        return max(daysBack, Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: earliest), to: today).day ?? 0)
+    }
 
     var body: some View {
-        HStack(spacing: 8) {
-            ForEach(days, id: \.self) { offset in
-                let date = Calendar.current.date(byAdding: .day, value: offset, to: .now) ?? .now
-                let isSelected = Calendar.current.isDate(date, inSameDayAs: selectedDate)
-                let amount = store.amount(on: date)
-                let reachedGoal = store.dailyGoalML > 0 && amount >= store.dailyGoalML
-                let isToday = Calendar.current.isDateInToday(date)
-                Button { selectedDate = date } label: {
-                    VStack(spacing: 7) {
-                        Text(date, format: .dateTime.weekday(.narrow)).font(.subheadline.weight(.regular))
-                        ZStack {
-                            Circle().trim(from: 0.1, to: 0.9)
-                                .stroke(.white.opacity(0.7), style: StrokeStyle(lineWidth: 5, lineCap: .round))
-                                .rotationEffect(.degrees(90))
-                            Circle()
-                                .trim(from: 0.1, to: 0.1 + 0.8 * min(Double(amount) / Double(max(store.dailyGoalML, 1)), 1))
-                                .stroke(
-                                    reachedGoal ? Color.blue : Color(red: 0.48, green: 0.72, blue: 0.92),
-                                    style: StrokeStyle(lineWidth: 5, lineCap: .round)
-                                )
-                                .rotationEffect(.degrees(90))
-                            Circle().fill(isSelected ? .white.opacity(0.85) : .clear)
-                                .padding(6)
-                            Text(date, format: .dateTime.day())
-                                .font(.subheadline.weight(.regular))
-                        }
-                        .frame(width: 38, height: 38)
-                    }
-                    .frame(maxWidth: .infinity).padding(.vertical, 10)
-                    .foregroundStyle(.primary)
-                    .contentShape(Rectangle())
+        ScrollViewReader { proxy in
+            VStack(spacing: 8) {
+                HStack {
+                    Text(selectedDate, format: .dateTime.month(.wide).year())
+                        .font(.subheadline).foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Today") {
+                        selectedDate = today
+                        withAnimation { proxy.scrollTo(0, anchor: .trailing) }
+                    }.font(.subheadline)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(date.formatted(date: .complete, time: .omitted))
-                .accessibilityValue("\(WaterVolume.number(amount)) of \(WaterVolume.label(store.dailyGoalML)). \(reachedGoal ? "Goal reached" : isToday ? "In progress" : "Goal not reached")")
-                .accessibilityAddTraits(isSelected ? .isSelected : [])
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(spacing: 8) {
+                        Button("Earlier dates") { daysBack = historyDays + 365 }
+                            .font(.caption).frame(width: 80)
+                        ForEach(-historyDays...0, id: \.self) { offset in
+                            let date = Calendar.current.date(byAdding: .day, value: offset, to: today) ?? today
+                            let isSelected = Calendar.current.isDate(date, inSameDayAs: selectedDate)
+                            let amount = store.amount(on: date)
+                            let reachedGoal = store.dailyGoalML > 0 && amount >= store.dailyGoalML
+                            let isToday = Calendar.current.isDateInToday(date)
+                            Button { selectedDate = date } label: {
+                                VStack(spacing: 7) {
+                                    Text(date, format: .dateTime.weekday(.narrow)).font(.subheadline.weight(.regular))
+                                    ZStack {
+                                        Circle().trim(from: 0.1, to: 0.9)
+                                            .stroke(.white.opacity(0.7), style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                                            .rotationEffect(.degrees(90))
+                                        Circle()
+                                            .trim(from: 0.1, to: 0.1 + 0.8 * min(Double(amount) / Double(max(store.dailyGoalML, 1)), 1))
+                                            .stroke(
+                                                reachedGoal ? Color.blue : Color(red: 0.48, green: 0.72, blue: 0.92),
+                                                style: StrokeStyle(lineWidth: 5, lineCap: .round)
+                                            )
+                                            .rotationEffect(.degrees(90))
+                                        Circle().fill(isSelected ? .white.opacity(0.85) : .clear)
+                                            .padding(6)
+                                        Text(date, format: .dateTime.day())
+                                            .font(.subheadline.weight(.regular))
+                                    }
+                                    .frame(width: 38, height: 38)
+                                }
+                                .frame(width: 48).padding(.vertical, 10)
+                                .foregroundStyle(.primary)
+                                .contentShape(Rectangle())
+                            }
+                            .id(offset)
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(date.formatted(date: .complete, time: .omitted))
+                            .accessibilityValue("\(WaterVolume.number(amount)) of \(WaterVolume.label(store.dailyGoalML)). \(reachedGoal ? "Goal reached" : isToday ? "In progress" : "Goal not reached")")
+                            .accessibilityAddTraits(isSelected ? .isSelected : [])
+                        }
+                    }
+                }
+                .onAppear { proxy.scrollTo(0, anchor: .trailing) }
+                Text("Swipe to browse previous days")
+                    .font(.caption2).foregroundStyle(.secondary)
             }
         }
     }

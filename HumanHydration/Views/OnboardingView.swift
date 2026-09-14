@@ -3,6 +3,9 @@ import SwiftUI
 struct OnboardingView: View {
     @EnvironmentObject private var store: HydrationStore
     @EnvironmentObject private var health: HealthKitService
+    @EnvironmentObject private var subscriptions: SubscriptionService
+    @State private var showingPro = false
+    @State private var showingIntro = true
     @AppStorage("hasCompletedOnboarding") private var completed = false
     @AppStorage("profileAge") private var savedAge = 25
     @AppStorage("profileHeightCM") private var savedHeight = 170
@@ -19,14 +22,15 @@ struct OnboardingView: View {
     @State private var workouts = 0
     @State private var workoutMinutes = 45
     @State private var goal = Double(HydrationGoalCalculator.gallonML)
-    @State private var drinkCapacity = ""
-    @State private var selectedBottle: String?
+    @State private var drinkCapacity = WaterVolume.input(250)
+    @State private var selectedBottle: String? = "glass"
+    @State private var bottlePage = 0
     @FocusState private var nameFocused: Bool
 
     private let bottles: [(asset: String, name: String, capacity: Int)] = BottleCatalog.options.map { ($0.0, $0.1, $0.2) }
     private let titles = ["Your name?", "Your age?", "Your height?",
-                          "How often do you work out?", "Your daily goal?",
-                          "What do you drink out of?", "Make it personal", "Creating your personal hydration plan", "Your hydration plan"]
+                          "How often do you work out?", "Your everyday glass or bottle",
+                          "Connect Apple Health", "Creating your personal hydration plan", "Your hydration plan"]
 
     var body: some View {
         GeometryReader { geometry in
@@ -49,16 +53,16 @@ struct OnboardingView: View {
             }
             .safeAreaInset(edge: .bottom) {
                 VStack(spacing: 12) {
-                    if step != 7 {
+                    if step != 6 {
                     Button(action: advance) {
-                        Text(step == 8 ? "Start my plan" : step == 6 ? "Create my plan" : "Continue")
+                        Text(step == 7 ? "Start my plan" : step == 5 ? "Create my plan" : step == 4 ? "Use this as my usual drink" : "Continue")
                             .font(.headline.weight(.regular))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.blue)
-                    .disabled(health.busy || (step == 0 && name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) || (step == 5 && selectedBottle != nil && WaterVolume.milliliters(drinkCapacity, minimum: 40) == nil))
+                    .disabled(health.busy || (step == 0 && name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) || (step == 4 && selectedBottle != nil && WaterVolume.milliliters(drinkCapacity, minimum: 40) == nil))
                     }
                 }
                 .frame(maxWidth: 460)
@@ -67,8 +71,13 @@ struct OnboardingView: View {
                 .frame(maxWidth: .infinity)
             }
         }
+        .overlay {
+            if showingIntro {
+                OnboardingIntroView { withAnimation(.easeInOut(duration: 0.35)) { showingIntro = false } }
+            }
+        }
         .task(id: step) {
-            guard step == 7 else { return }
+            guard step == 6 else { return }
             planProgress = 0
             do {
                 for stage in 1...3 {
@@ -78,8 +87,11 @@ struct OnboardingView: View {
                     }
                 }
                 try await Task.sleep(for: .milliseconds(350))
-                withAnimation(reduceMotion ? nil : .easeInOut) { step = 8 }
+                withAnimation(reduceMotion ? nil : .easeInOut) { step = 7 }
             } catch { }
+        }
+        .fullScreenCover(isPresented: $showingPro, onDismiss: { completed = true }) {
+            ProSubscriptionSheet(isOnboarding: true)
         }
         .multilineTextAlignment(.center)
         .onAppear {
@@ -138,64 +150,57 @@ struct OnboardingView: View {
                 Stepper("About \(workoutMinutes) minutes each", value: $workoutMinutes, in: 15...180, step: 15)
             }
         case 4:
-            Text(age >= 18 ? "Recommended starting point" : "Choose a goal with a parent or clinician")
+            Text("Choose what you drink water from most often.")
+                .font(.headline.weight(.regular))
+            Text("We’ll use it for quick logging on Home. You can change it anytime.")
                 .font(.subheadline).foregroundStyle(.secondary)
-            Text("\(WaterVolume.label(Int(goal)))")
-                .font(.system(size: 38, weight: .regular, design: .rounded))
-                .monospacedDigit()
-            Text("Starts with 1 gallon (128 fl oz) every day. Body size can raise that floor; planned exercise adds an average daily allowance.")
-                .font(.subheadline).foregroundStyle(.secondary)
-            if workouts > 0 {
-                Text("Workout adjustment: +\(WaterVolume.label(HydrationGoalCalculator.workoutAdjustmentML(workoutsPerWeek: workouts, workoutMinutes: workoutMinutes))) per day, averaged across the week.")
-                    .font(.subheadline).foregroundStyle(.secondary)
-            }
-            Text("This is an adult tracking formula, not a prescription. Actual sweat loss, climate, pregnancy, illness, medications, and heart or kidney conditions can change safe intake. Don’t force fluids; follow any clinician-set limit.")
-                .font(.caption).foregroundStyle(.secondary)
-            Link("About this recommendation",
-                 destination: URL(string: "https://nap.nationalacademies.org/read/10925/chapter/2")!)
-                .font(.caption)
-        case 5:
-            Text("Pick your everyday go-to.")
-                .font(.subheadline).foregroundStyle(.secondary)
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
-                ForEach(bottles, id: \.asset) { bottle in
-                    Button {
-                        selectedBottle = bottle.asset
-                        drinkCapacity = WaterVolume.input(bottle.capacity)
-                    } label: {
-                        VStack(spacing: 8) {
-                            DrinkIcon(name: bottle.asset).frame(height: 92)
-                            Text(bottle.name).font(.caption)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(10)
-                        .background(HydrationTheme.surface, in: RoundedRectangle(cornerRadius: 18))
-                        .overlay(RoundedRectangle(cornerRadius: 18)
-                            .stroke(selectedBottle == bottle.asset ? Color.blue : .clear, lineWidth: 1.5))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(selectedBottle == bottle.asset ? .isSelected : [])
+            TabView(selection: $bottlePage) {
+                ForEach(bottles.indices, id: \.self) { index in
+                    let bottle = bottles[index]
+                    VStack(spacing: 12) {
+                        BottleFinishIcon(asset: bottle.asset, finish: "clear")
+                            .frame(height: 230)
+                            .padding(.horizontal, 48)
+                            .shadow(color: .black.opacity(0.08), radius: 12, y: 8)
+                        Text(bottle.name).font(.title3.weight(.regular))
+                        Text(BottleCatalog.sizeLabel(capacityML: bottle.capacity))
+                            .font(.subheadline).foregroundStyle(.secondary)
+                    }.frame(maxWidth: .infinity).tag(index)
                 }
             }
-            if selectedBottle != nil {
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .frame(height: 320)
+            .overlay(alignment: .top) {
                 HStack {
-                    Text("Full capacity")
-                    TextField("fl oz", text: $drinkCapacity).keyboardType(.decimalPad)
-                        .multilineTextAlignment(.trailing)
-                    Text("fl oz")
-                }.padding(14).modifier(LiquidGlassSurface(shape: .rounded(16)))
-                Text("This becomes your one-tap drink on Home. Sizes are approximate—check your label and adjust if you know it.")
-                    .font(.caption).foregroundStyle(.secondary)
+                    Button { withAnimation { bottlePage -= 1 } } label: {
+                        Image(systemName: "chevron.left").frame(width: 44, height: 44)
+                    }.disabled(bottlePage == 0).accessibilityLabel("Previous bottle")
+                    Spacer()
+                    Button { withAnimation { bottlePage += 1 } } label: {
+                        Image(systemName: "chevron.right").frame(width: 44, height: 44)
+                    }.disabled(bottlePage == bottles.count - 1).accessibilityLabel("Next bottle")
+                }.foregroundStyle(.primary).frame(height: 230).padding(.top, 15)
             }
-            Button("I use different ones") { selectedBottle = nil }
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        case 6:
+            .onChange(of: bottlePage) { _, index in
+                selectedBottle = bottles[index].asset
+                drinkCapacity = WaterVolume.input(bottles[index].capacity)
+            }
+            Text("Swipe to choose · \(bottlePage + 1) of \(bottles.count)")
+                .font(.caption).foregroundStyle(.secondary)
+            HStack {
+                Text("Full capacity")
+                TextField("fl oz", text: $drinkCapacity).keyboardType(.decimalPad)
+                    .multilineTextAlignment(.trailing)
+                Text("fl oz")
+            }.padding(14).modifier(LiquidGlassSurface(shape: .rounded(16)))
+            Text("Check your glass or bottle’s size and adjust if needed. This will be your usual drink.")
+                .font(.caption).foregroundStyle(.secondary)
+        case 5:
             HealthConnectionCard()
                 .padding(22).modifier(LiquidGlassSurface(shape: .rounded(28)))
             Text("You can skip this and connect later in Settings.")
                 .font(.caption).foregroundStyle(.secondary)
-        case 7:
+        case 6:
             ZStack {
                 Circle().stroke(.blue.opacity(0.1), lineWidth: 12)
                 Circle().trim(from: 0, to: planProgress)
@@ -257,12 +262,15 @@ struct OnboardingView: View {
     }
 
     private func advance() {
-        if step == 8 { completed = true; return }
-        guard step != 7 else { return }
-        if step == 6 { withAnimation(reduceMotion ? nil : .easeInOut) { step = 7 }; return }
+        if step == 7 {
+            if subscriptions.isPro { completed = true } else { showingPro = true }
+            return
+        }
+        guard step != 6 else { return }
+        if step == 5 { withAnimation(reduceMotion ? nil : .easeInOut) { step = 6 }; return }
         guard step != 0 || !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         nameFocused = false
-        if step < 5 {
+        if step < 4 {
             if step == 3 {
                 goal = Double(HydrationGoalCalculator.dailyGoalML(weightPounds: Double(weight), workoutsPerWeek: workouts, workoutMinutes: workoutMinutes))
             }
@@ -283,6 +291,56 @@ struct OnboardingView: View {
         } else {
             store.bottle = nil
         }
-        step = 6
+        step = 5
+    }
+}
+
+private struct OnboardingIntroView: View {
+    let begin: () -> Void
+    @State private var textVisible = false
+    @State private var detailVisible = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        ZStack {
+            HydrationTheme.canvas.ignoresSafeArea()
+            VStack(spacing: 24) {
+                Spacer()
+                Image(systemName: "drop.fill")
+                    .font(.system(size: 52, weight: .regular))
+                    .foregroundStyle(.blue)
+                    .scaleEffect(textVisible ? 1 : 0.72)
+                    .opacity(textVisible ? 1 : 0)
+                Text("Answer a few questions to get your personalized hydration plan.")
+                    .font(.largeTitle.weight(.regular))
+                    .multilineTextAlignment(.center)
+                    .opacity(textVisible ? 1 : 0)
+                    .offset(y: textVisible ? 0 : 14)
+                Text("It only takes a minute.")
+                    .font(.headline.weight(.regular))
+                    .foregroundStyle(.secondary)
+                    .opacity(detailVisible ? 1 : 0)
+                Spacer()
+                Button("Let’s begin") { begin() }
+                    .font(.headline.weight(.regular))
+                    .buttonStyle(.borderedProminent)
+                    .tint(.blue)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .opacity(detailVisible ? 1 : 0)
+            }
+            .frame(maxWidth: 460)
+            .padding(28)
+        }
+        .task {
+            if reduceMotion {
+                textVisible = true
+                detailVisible = true
+            } else {
+                withAnimation(.easeOut(duration: 0.7)) { textVisible = true }
+                try? await Task.sleep(for: .milliseconds(450))
+                withAnimation(.easeOut(duration: 0.5)) { detailVisible = true }
+            }
+        }
     }
 }

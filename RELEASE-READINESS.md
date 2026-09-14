@@ -1,5 +1,31 @@
 # human app — release readiness
 
+## Glass Apple button restored — pending next upload
+
+Restored the original glass capsule and white Apple label using a real SwiftUI Button that directly starts ASAuthorizationController. A retained coordinator supplies the active window, prevents duplicate presentations, and releases request state on success/cancellation/error. The nonce and Supabase token exchange remain intact. Simulator Debug build passed. This change has not been uploaded; build 6 still has the standard white Apple button. Real-device sign-in should be rechecked after this presentation change.
+
+## Calendar and glass-first onboarding — build 6, September 14, 2026
+
+- Home's date strip scrolls horizontally through a year of dates or the full saved history, whichever is longer. Earlier dates extends the range; Today returns to the current day. Date selection continues to display that day's entries and total.
+- Onboarding starts with a glass of water and uses large, swipeable bottle pages with previous/next arrows, matching Home's chooser style. It explicitly asks what the user drinks water from most often, allows capacity adjustment, and saves the selection as the usual drink for Home. The chooser's fallback and new WaterBottle defaults are glass; saved existing choices are retained.
+- Swift checks, simulator Debug build, and signed Release archive passed. No device interaction test was performed for these UI changes.
+- Version 1.0 (6) uploaded successfully at **01:18:54 CDT**. Apple reports package processing. Archive: `/tmp/human-calendar-bottle-build6.xcarchive`; upload log: `/tmp/human-calendar-bottle-upload.log`. Tester availability and external beta review status remain unverified.
+
+## Apple sign-in and onboarding upsell — build 5, September 14, 2026
+
+- Replaced the Apple sign-in control at 1% opacity over a custom label with a visible native button. The transparent control was a likely cause of the reported failure to open Apple's authorization sheet. Clear stale messages and nonce state, dismiss the keyboard on authorization, and prevent starting another Apple exchange while authentication is loading.
+- Live public Auth settings confirm `external.apple=true` and signup enabled. Build 4 already carried the Apple sign-in entitlement. Real-device authorization, cancellation, and returning-account login still need verification; mocked token checks do not prove Apple's sheet completes.
+- Signup explicitly starts free. After the personal plan summary, new free accounts see a full-screen Human Pro offer with a persistent Continue with free option. Existing Pro users skip the offer; successful purchase/restore exits it. Onboarding completion remains account-scoped.
+- Uses the existing StoreKit purchase and restore implementation. Paid checkout remains gated by backend availability and a configured privacy URL; the offer explains when purchases are unavailable.
+- Swift checks, including added Apple token success, identity mismatch, rejection, and empty-credential cases, passed. Simulator Debug build and signed Release archive passed; app and widget are both 1.0 (5).
+- Archive: `/tmp/human-apple-upsell-build5.xcarchive`. Apple accepted the upload at **01:04:05 CDT**: `Upload succeeded`, `EXPORT SUCCEEDED`, package processing. Upload log: `/tmp/human-apple-upsell-upload.log`. Final TestFlight availability and external beta review status remain unverified; no public App Store submission was made.
+
+## Latest TestFlight upload — September 14, 2026
+
+Version **1.0 (4)** was successfully uploaded to Apple at **00:53:45 CDT** on September 14. Verified from `/tmp/human-testflight-build4.xcarchive/Info.plist`: distribution upload state `success`, title `Uploaded to Apple`, uploaded build number `4`, no errors or warnings. Archive creation followed merge commit `1c1c6f4` (personalized hydration plans and adaptive Pro experience). The working tree was clean when checked. No duplicate upload was needed.
+
+Live processing, internal testing availability, and external Beta App Review status for build 4 remain unverified because App Store Connect requires renewed sign-in. The earlier external-review submission below refers to build 3, not build 4.
+
 Updated September 12, 2026. This is a working release checklist, not a declaration that the app is ready to submit.
 
 ## TestFlight upload — September 12
