@@ -6,15 +6,19 @@ struct OnboardingView: View {
     @AppStorage("hasCompletedOnboarding") private var completed = false
     @AppStorage("profileAge") private var savedAge = 25
     @AppStorage("profileHeightCM") private var savedHeight = 170
+    @AppStorage("profileWeightPounds") private var savedWeight = 170
     @AppStorage("profileWorkoutsPerWeek") private var savedWorkouts = 0
+    @AppStorage("profileWorkoutMinutes") private var savedWorkoutMinutes = 45
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var planProgress = 0.0
     @State private var step = 0
     @State private var name = ""
     @State private var age = 25
     @State private var height = 170
+    @State private var weight = 170
     @State private var workouts = 0
-    @State private var goal = 2000.0
+    @State private var workoutMinutes = 45
+    @State private var goal = Double(HydrationGoalCalculator.gallonML)
     @State private var drinkCapacity = ""
     @State private var selectedBottle: String?
     @FocusState private var nameFocused: Bool
@@ -53,7 +57,7 @@ struct OnboardingView: View {
                             .padding(.vertical, 16)
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(.black)
+                    .tint(.blue)
                     .disabled(health.busy || (step == 0 && name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) || (step == 5 && selectedBottle != nil && WaterVolume.milliliters(drinkCapacity, minimum: 40) == nil))
                     }
                 }
@@ -82,7 +86,9 @@ struct OnboardingView: View {
             name = store.displayName
             age = savedAge
             height = savedHeight
+            weight = savedWeight
             workouts = savedWorkouts
+            workoutMinutes = savedWorkoutMinutes
         }
     }
 
@@ -107,12 +113,17 @@ struct OnboardingView: View {
             .pickerStyle(.wheel)
             .frame(height: 180)
         case 2:
-            Picker("Height in feet and inches", selection: Binding(
-                get: { Int((Double(height) / 2.54).rounded()) },
-                set: { height = Int((Double($0) * 2.54).rounded()) }
-            )) {
-                ForEach(31...95, id: \.self) { inches in
-                    Text("\(inches / 12) ft \(inches % 12) in").tag(inches)
+            HStack {
+                Picker("Height in feet and inches", selection: Binding(
+                    get: { Int((Double(height) / 2.54).rounded()) },
+                    set: { height = Int((Double($0) * 2.54).rounded()) }
+                )) {
+                    ForEach(48...95, id: \.self) { inches in
+                        Text("\(inches / 12) ft \(inches % 12) in").tag(inches)
+                    }
+                }
+                Picker("Weight in pounds", selection: $weight) {
+                    ForEach(70...500, id: \.self) { Text("\($0) lb").tag($0) }
                 }
             }
             .pickerStyle(.wheel).frame(height: 180)
@@ -123,30 +134,25 @@ struct OnboardingView: View {
                 ForEach(0...7, id: \.self) { Text("\($0) days").tag($0) }
             }
             .pickerStyle(.wheel).frame(height: 180)
+            if workouts > 0 {
+                Stepper("About \(workoutMinutes) minutes each", value: $workoutMinutes, in: 15...180, step: 15)
+            }
         case 4:
             Text(age >= 18 ? "Recommended starting point" : "Choose a goal with a parent or clinician")
                 .font(.subheadline).foregroundStyle(.secondary)
             Text("\(WaterVolume.label(Int(goal)))")
                 .font(.system(size: 38, weight: .regular, design: .rounded))
                 .monospacedDigit()
-            Slider(value: Binding(
-                get: { goal / WaterVolume.mlPerOunce },
-                set: { goal = ($0 * WaterVolume.mlPerOunce).rounded() }
-            ), in: 17...169, step: 1)
-                .tint(.black)
-                .accessibilityLabel("Daily hydration goal in fluid ounces")
-            Text(age >= 18
-                 ? "A general adult starting point of about 68 fl oz of fluids per day. Adjust it to suit you."
-                 : "Children’s needs vary. This is an editable tracking goal, not a recommendation.")
+            Text("Starts with 1 gallon (128 fl oz) every day. Body size can raise that floor; planned exercise adds an average daily allowance.")
                 .font(.subheadline).foregroundStyle(.secondary)
             if workouts > 0 {
-                Text("On your \(workouts) workout days, drink regularly and replace extra fluids lost through sweat.")
+                Text("Workout adjustment: +\(WaterVolume.label(HydrationGoalCalculator.workoutAdjustmentML(workoutsPerWeek: workouts, workoutMinutes: workoutMinutes))) per day, averaged across the week.")
                     .font(.subheadline).foregroundStyle(.secondary)
             }
-            Text("Age, height and workout frequency alone don’t determine your fluid needs. Other drinks count too; follow any fluid limit your clinician has given you.")
+            Text("This is an adult tracking formula, not a prescription. Actual sweat loss, climate, pregnancy, illness, medications, and heart or kidney conditions can change safe intake. Don’t force fluids; follow any clinician-set limit.")
                 .font(.caption).foregroundStyle(.secondary)
             Link("About this recommendation",
-                 destination: URL(string: "https://www.kch.nhs.uk/patients-and-visitors/patients/hydration-matters/")!)
+                 destination: URL(string: "https://nap.nationalacademies.org/read/10925/chapter/2")!)
                 .font(.caption)
         case 5:
             Text("Pick your everyday go-to.")
@@ -163,9 +169,9 @@ struct OnboardingView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(10)
-                        .background(.white.opacity(0.3), in: RoundedRectangle(cornerRadius: 18))
+                        .background(HydrationTheme.surface, in: RoundedRectangle(cornerRadius: 18))
                         .overlay(RoundedRectangle(cornerRadius: 18)
-                            .stroke(selectedBottle == bottle.asset ? Color.black : .clear, lineWidth: 1.5))
+                            .stroke(selectedBottle == bottle.asset ? Color.blue : .clear, lineWidth: 1.5))
                     }
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(selectedBottle == bottle.asset ? .isSelected : [])
@@ -257,13 +263,18 @@ struct OnboardingView: View {
         guard step != 0 || !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         nameFocused = false
         if step < 5 {
+            if step == 3 {
+                goal = Double(HydrationGoalCalculator.dailyGoalML(weightPounds: Double(weight), workoutsPerWeek: workouts, workoutMinutes: workoutMinutes))
+            }
             step += 1
             return
         }
         store.displayName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         savedAge = age
         savedHeight = height
+        savedWeight = weight
         savedWorkouts = workouts
+        savedWorkoutMinutes = workoutMinutes
         store.dailyGoalML = Int(goal)
         if let bottle = bottles.first(where: { $0.asset == selectedBottle }) {
             store.selectBottle(WaterBottle(name: bottle.name, capacityML: WaterVolume.milliliters(drinkCapacity, minimum: 40) ?? bottle.capacity,

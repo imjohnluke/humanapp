@@ -15,6 +15,7 @@ final class HydrationStore: ObservableObject {
     private let defaults: UserDefaults
     private let accountID: String?
     private let calendar = Calendar.current
+    private var widgetAccessEnabled = false
 
     init(defaults: UserDefaults = .standard, accountID: String? = nil) {
         self.defaults = defaults
@@ -23,7 +24,8 @@ final class HydrationStore: ObservableObject {
             .filter { (40...7570).contains($0.capacityML) && !$0.name.isEmpty }
         selectedDrinkID = defaults.string(forKey: "selectedDrinkID").flatMap(UUID.init(uuidString:))
         displayName = defaults.string(forKey: "displayName") ?? ""
-        let loadedGoal = defaults.object(forKey: "dailyGoalML") as? Int ?? 2400
+        let loadedGoal = max(defaults.object(forKey: "dailyGoalML") as? Int ?? HydrationGoalCalculator.gallonML,
+                             HydrationGoalCalculator.gallonML)
         let loadedEntries = (try? JSONDecoder().decode([HydrationEntry].self, from: defaults.data(forKey: "entries") ?? Data())) ?? []
         dailyGoalML = loadedGoal
         entries = loadedEntries
@@ -133,10 +135,16 @@ final class HydrationStore: ObservableObject {
     }
 
     func publishWidgetData() {
+        guard widgetAccessEnabled else { HydrationWidgetData.clear(); return }
         guard let accountID, UserDefaults.standard.string(forKey: "activeWidgetAccountID") == accountID else { return }
         HydrationWidgetData(goalML: dailyGoalML, drinks: entries.map {
             .init(date: $0.date, amountML: $0.amountML)
         }).save()
+    }
+
+    func setWidgetAccess(_ enabled: Bool) {
+        widgetAccessEnabled = enabled
+        if enabled { publishWidgetData() } else { HydrationWidgetData.clear() }
     }
 
     private func save() {

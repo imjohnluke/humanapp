@@ -9,6 +9,9 @@ struct HydrationAdjustmentChecks {
         precondition(WaterVolume.milliliters("nan") == nil && WaterVolume.milliliters("999999999") == nil)
         precondition(WaterVolume.milliliters("0") == nil && WaterVolume.milliliters("-5") == nil)
         precondition(BottleCatalog.sizeLabel(capacityML: 3785) == "1 gallon")
+        precondition(HydrationGoalCalculator.dailyGoalML(weightPounds: 170, workoutsPerWeek: 0, workoutMinutes: 60) == 3785)
+        precondition(HydrationGoalCalculator.dailyGoalML(weightPounds: 250, workoutsPerWeek: 7, workoutMinutes: 60) > 3785)
+        precondition(HydrationGoalCalculator.workoutAdjustmentML(workoutsPerWeek: 7, workoutMinutes: 60) == 400)
         let domain = "hydration-adjustment-tests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: domain)!
         defer { defaults.removePersistentDomain(forName: domain) }
@@ -43,7 +46,7 @@ struct HydrationAdjustmentChecks {
             for count in [finish.days - 1, finish.days] {
                 defaults.removePersistentDomain(forName: domain)
                 let history = (1...count).map { day in
-                    HydrationEntry(amountML: 2400, date: Calendar.current.date(byAdding: .day, value: -day, to: today)!)
+                    HydrationEntry(amountML: HydrationGoalCalculator.gallonML, date: Calendar.current.date(byAdding: .day, value: -day, to: today)!)
                 }
                 defaults.set(try JSONEncoder().encode(history), forKey: "entries")
                 let rewards = HydrationStore(defaults: defaults)
@@ -59,11 +62,11 @@ struct HydrationAdjustmentChecks {
         }
         defaults.removePersistentDomain(forName: domain)
         let sixDays = (1...6).map { day in
-            HydrationEntry(amountML: 2400, date: Calendar.current.date(byAdding: .day, value: -day, to: today)!)
+            HydrationEntry(amountML: HydrationGoalCalculator.gallonML, date: Calendar.current.date(byAdding: .day, value: -day, to: today)!)
         }
         defaults.set(try JSONEncoder().encode(sixDays), forKey: "entries")
         let liveRewards = HydrationStore(defaults: defaults)
-        liveRewards.addWater(2390)
+        liveRewards.addWater(HydrationGoalCalculator.gallonML - 10)
         precondition(!liveRewards.isFinishUnlocked("black"))
         liveRewards.addWater(10)
         precondition(liveRewards.isFinishUnlocked("black"), "Unlock immediately when today's goal is reached")

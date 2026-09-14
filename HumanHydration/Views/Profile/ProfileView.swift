@@ -3,9 +3,7 @@ import SwiftUI
 struct ProfileView: View {
     @EnvironmentObject private var auth: AuthService
     @EnvironmentObject private var store: HydrationStore
-    @EnvironmentObject private var subscriptions: SubscriptionService
     @State private var showingSettings = false
-    @State private var showingPro = false
     @State private var showingCollection = false
     @State private var historyMetric: HydrationHistoryMetric?
 
@@ -15,30 +13,21 @@ struct ProfileView: View {
             ScrollView {
                 VStack(spacing: 22) {
                     HStack(spacing: 16) {
-                        Circle().fill(.white.opacity(0.65)).frame(width: 72, height: 72)
-                            .overlay(Image(systemName: "person.fill").font(.system(size: 30, weight: .light)).foregroundStyle(.black.opacity(0.55)))
-                            .overlay(Circle().stroke(.white.opacity(0.9), lineWidth: 1))
+                        Circle().fill(HydrationTheme.surface).frame(width: 72, height: 72)
+                            .overlay(Image(systemName: "person.fill").font(.system(size: 30, weight: .light)).foregroundStyle(.secondary))
+                            .overlay(Circle().stroke(HydrationTheme.border, lineWidth: 1))
                             .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 0) {
                             Text(store.displayName.isEmpty ? "Your name" : store.displayName)
                                 .font(.title2.weight(.regular))
                                 .fixedSize(horizontal: false, vertical: true)
-                            ViewThatFits(in: .horizontal) {
-                                HStack(spacing: 8) {
-                                    memberSinceLabel
-                                    membershipBadge
-                                }
-                                VStack(alignment: .leading, spacing: 2) {
-                                    memberSinceLabel
-                                    membershipBadge
-                                }
-                            }
+                            memberSinceLabel
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         Button { showingSettings = true } label: {
                             Image(systemName: "gearshape")
                                 .font(.headline.weight(.regular))
-                                .foregroundStyle(.black)
+                                .foregroundStyle(.primary)
                                 .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                         }
@@ -70,7 +59,7 @@ struct ProfileView: View {
                                     }
                                     .foregroundStyle(.primary)
                                     .frame(maxWidth: .infinity).padding(.vertical, 12)
-                                    .background(.white.opacity(unlocked ? 0.25 : 0.08), in: RoundedRectangle(cornerRadius: 18))
+                                    .background(unlocked ? HydrationTheme.surface : HydrationTheme.subtleSurface, in: RoundedRectangle(cornerRadius: 18))
                                 }.buttonStyle(.plain)
                                     .accessibilityLabel("\(finish.name), \(unlocked ? "unlocked" : "requires a \(finish.days) day streak")")
                             }
@@ -100,7 +89,6 @@ struct ProfileView: View {
             }
         }
         .sheet(isPresented: $showingSettings) { SettingsView() }
-        .sheet(isPresented: $showingPro) { ProSubscriptionSheet() }
         .sheet(isPresented: $showingCollection) { BottlePickerSheet() }
         .sheet(item: $historyMetric) { HydrationHistorySheet(metric: $0) }
 
@@ -112,21 +100,6 @@ struct ProfileView: View {
         } ?? "Member since —")
         .font(.caption).foregroundStyle(.secondary)
         .fixedSize(horizontal: true, vertical: false)
-    }
-
-    private var membershipBadge: some View {
-        Button { showingPro = true } label: {
-            Text(subscriptions.isPro ? "Pro" : "Free")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(subscriptions.isPro ? Color.blue : Color.secondary)
-                .padding(.horizontal, 10).padding(.vertical, 5)
-                .background(subscriptions.isPro ? Color.blue.opacity(0.1) : Color.white.opacity(0.6), in: Capsule())
-                .fixedSize()
-
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(subscriptions.isPro ? "Pro membership" : "Free membership")
-        .accessibilityHint("View membership details")
     }
 
 }
@@ -202,7 +175,7 @@ private struct ProfileStat: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Label(label, systemImage: icon).font(.caption.weight(.regular)).foregroundStyle(.secondary)
-            Text(value).font(.title3.weight(.regular)).foregroundStyle(.black)
+            Text(value).font(.title3.weight(.regular)).foregroundStyle(.primary)
                 .lineLimit(1).minimumScaleFactor(0.75)
         }
             .frame(maxWidth: .infinity, alignment: .leading).padding(16).modifier(LiquidGlassSurface(shape: .rounded(20)))
@@ -269,7 +242,7 @@ struct HydrationHistorySheet: View {
                         Text(selectedDay.formatted(date: .abbreviated, time: .omitted)).font(.subheadline.weight(.regular))
                         Text("\(WaterVolume.label(store.amount(on: selectedDay)))")
                             .font(.title2.weight(.regular))
-                        ProgressView(value: min(Double(store.amount(on: selectedDay)) / Double(max(store.dailyGoalML, 1)), 1)).tint(.black)
+                        ProgressView(value: min(Double(store.amount(on: selectedDay)) / Double(max(store.dailyGoalML, 1)), 1)).tint(.blue)
                         Text(store.amount(on: selectedDay) == 0 ? "No water logged" : "\(store.entries.filter { calendar.isDate($0.date, inSameDayAs: selectedDay) }.count) water logs")
                             .font(.caption).foregroundStyle(.secondary)
                         Text("Compared with your current goal of \(WaterVolume.label(store.dailyGoalML))")
@@ -282,7 +255,7 @@ struct HydrationHistorySheet: View {
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             .background(HydrationTheme.canvas.ignoresSafeArea())
         }
-        .tint(.black)
+        .tint(.blue)
         .presentationDetents([.large]).presentationDragIndicator(.visible)
         .presentationBackground(.ultraThinMaterial)
     }
@@ -311,8 +284,8 @@ struct HydrationHistorySheet: View {
                                     .font(.system(size: reached ? 9 : 4))
                                     .opacity(reached || store.amount(on: day) > 0 ? 1 : 0)
                             }.frame(maxWidth: .infinity).frame(height: 40)
-                                .background(selected ? Color.black.opacity(0.09) : Color.clear, in: RoundedRectangle(cornerRadius: 12))
-                                .foregroundStyle(future ? Color.gray.opacity(0.4) : Color.black)
+                                .background(selected ? Color.blue.opacity(0.12) : Color.clear, in: RoundedRectangle(cornerRadius: 12))
+                                .foregroundStyle(future ? Color.gray.opacity(0.4) : Color.primary)
                         }.buttonStyle(.plain).disabled(future)
                             .accessibilityLabel("\(day.formatted(date: .complete, time: .omitted)), \(WaterVolume.label(store.amount(on: day)))\(reached ? ", goal reached" : "")")
                             .accessibilityAddTraits(selected ? .isSelected : [])

@@ -15,7 +15,7 @@ struct TodayView: View {
                         HStack(spacing: 8) {
                             BundledLogoImage(name: "human-logo-mark")
                                 .frame(width: 28, height: 28)
-                            Text("Human Hydration").font(.title3.weight(.regular)).foregroundStyle(.black)
+                            Text("Human Hydration").font(.title3.weight(.regular)).foregroundStyle(.primary)
                         }
                         Spacer()
                         Button { historyMetric = .streak } label: {
@@ -163,7 +163,7 @@ struct BottlePickerSheet: View {
                         let chosen = options.first { $0.0 == selectedAsset }!
                         store.selectBottle(WaterBottle(name: chosen.1, capacityML: chosen.2, assetName: chosen.0, colorName: previewColor))
                         dismiss()
-                    } label: { Text(store.isFinishUnlocked(previewColor) ? "Use this bottle" : "How to unlock").font(.headline.weight(.regular)).frame(maxWidth: .infinity).padding(.vertical, 15) }.buttonStyle(.borderedProminent).tint(.black)
+                    } label: { Text(store.isFinishUnlocked(previewColor) ? "Use this bottle" : "How to unlock").font(.headline.weight(.regular)).frame(maxWidth: .infinity).padding(.vertical, 15) }.buttonStyle(.borderedProminent).tint(.blue)
                 }.padding()
             }.scrollContentBackground(.hidden)
                 .background(Color.clear)
@@ -301,7 +301,7 @@ private struct TodayHydrationSection: View {
                 Text("Make your usual drink a one-tap log.")
                     .font(.subheadline).foregroundStyle(.secondary)
                 Button("Set up my glass or bottle") { showingDrinks = true }
-                    .buttonStyle(.borderedProminent).tint(.black)
+                    .buttonStyle(.borderedProminent).tint(.blue)
             }
             HStack(spacing: 24) {
                 Button("Enter manually") { showingAddWater = true }
@@ -429,12 +429,41 @@ private struct BentoCard: View {
     }
 }
 
+enum AppearancePreference: String, CaseIterable, Identifiable {
+    case system, light, dark
+    var id: String { rawValue }
+    var title: String { rawValue.capitalized }
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
+        }
+    }
+}
+
 enum HydrationTheme {
+    private static func adaptive(light: UIColor, dark: UIColor) -> Color {
+        Color(uiColor: UIColor { $0.userInterfaceStyle == .dark ? dark : light })
+    }
+
+    static let surface = adaptive(
+        light: UIColor.white.withAlphaComponent(0.42),
+        dark: UIColor(red: 0.10, green: 0.16, blue: 0.22, alpha: 0.78)
+    )
+    static let subtleSurface = adaptive(
+        light: UIColor.white.withAlphaComponent(0.24),
+        dark: UIColor.white.withAlphaComponent(0.055)
+    )
+    static let border = adaptive(
+        light: UIColor.white.withAlphaComponent(0.75),
+        dark: UIColor.white.withAlphaComponent(0.14)
+    )
     static let canvas = LinearGradient(
         gradient: Gradient(stops: [
-            .init(color: Color(red: 0.86, green: 0.93, blue: 0.99), location: 0),
-            .init(color: Color(red: 0.96, green: 0.98, blue: 1), location: 0.24),
-            .init(color: .white, location: 0.46)
+            .init(color: adaptive(light: UIColor(red: 0.86, green: 0.93, blue: 0.99, alpha: 1), dark: UIColor(red: 0.025, green: 0.08, blue: 0.14, alpha: 1)), location: 0),
+            .init(color: adaptive(light: UIColor(red: 0.96, green: 0.98, blue: 1, alpha: 1), dark: UIColor(red: 0.035, green: 0.095, blue: 0.16, alpha: 1)), location: 0.24),
+            .init(color: adaptive(light: .white, dark: UIColor(red: 0.045, green: 0.06, blue: 0.085, alpha: 1)), location: 0.46)
         ]),
         startPoint: .top,
         endPoint: .bottom
@@ -453,8 +482,8 @@ struct LiquidGlassSurface: ViewModifier {
             }
         } else {
             switch shape {
-            case .capsule: content.background(.ultraThinMaterial, in: Capsule()).overlay(Capsule().stroke(.white.opacity(0.75), lineWidth: 1))
-            case .rounded(let radius): content.background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: radius)).overlay(RoundedRectangle(cornerRadius: radius).stroke(.white.opacity(0.75), lineWidth: 1))
+            case .capsule: content.background(.ultraThinMaterial, in: Capsule()).overlay(Capsule().stroke(HydrationTheme.border, lineWidth: 1))
+            case .rounded(let radius): content.background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: radius)).overlay(RoundedRectangle(cornerRadius: radius).stroke(HydrationTheme.border, lineWidth: 1))
             case .none: content
             }
         }
@@ -467,10 +496,10 @@ private struct WaterBottleVisual: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            RoundedRectangle(cornerRadius: 42).fill(.white.opacity(0.72)).shadow(color: .blue.opacity(0.16), radius: 12, y: 8)
+            RoundedRectangle(cornerRadius: 42).fill(HydrationTheme.surface).shadow(color: .blue.opacity(0.16), radius: 12, y: 8)
             WaveShape(level: 1 - progress, phase: phase).fill(.blue.gradient).clipShape(RoundedRectangle(cornerRadius: 42)).animation(.easeInOut(duration: 0.8), value: progress)
-            RoundedRectangle(cornerRadius: 42).stroke(.white.opacity(0.8), lineWidth: 3)
-            Capsule().fill(.white.opacity(0.55)).frame(width: 14).padding(.leading, 22).padding(.vertical, 22).frame(maxWidth: .infinity, alignment: .leading)
+            RoundedRectangle(cornerRadius: 42).stroke(HydrationTheme.border, lineWidth: 3)
+            Capsule().fill(HydrationTheme.border).frame(width: 14).padding(.leading, 22).padding(.vertical, 22).frame(maxWidth: .infinity, alignment: .leading)
             VStack(spacing: 5) { Image(systemName: "drop.fill").font(.title2); Text("\(Int(progress * 100))%").font(.title3.weight(.regular)) }.foregroundStyle(.white).shadow(radius: 3).padding(.bottom, 24)
         }.frame(width: 116, height: 168).overlay(alignment: .top) {
             RoundedRectangle(cornerRadius: 8).fill(.gray.gradient).frame(width: 48, height: 20).offset(y: -10)

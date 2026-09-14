@@ -10,6 +10,7 @@ struct SettingsView: View {
     @State private var reminderTime = Calendar.current.date(from: DateComponents(hour: 10)) ?? .now
     @State private var savingReminder = false
     @State private var reminderError: String?
+    @AppStorage("appearancePreference") private var appearance = AppearancePreference.system.rawValue
     var title: String = "Settings"
     var body: some View {
         NavigationStack {
@@ -26,8 +27,11 @@ struct SettingsView: View {
                     Stepper("\(WaterVolume.label(store.dailyGoalML))", value: Binding(
                         get: { Int(WaterVolume.ounces(store.dailyGoalML).rounded()) },
                         set: { store.dailyGoalML = Int((Double($0) * WaterVolume.mlPerOunce).rounded()) }
-                    ), in: 17...202, step: 1)
+                    ), in: 128...400, step: 1)
+                    Text("One gallon is the minimum tracking target. Your body size and workout routine may set it higher.")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
+                appearanceSection
                 Section("Bottle") {
                     Button { showingBottlePicker = true } label: {
                         HStack {
@@ -101,6 +105,21 @@ struct SettingsView: View {
                 reminderTime = Calendar.current.date(from: trigger.dateComponents) ?? reminderTime
                 remindersEnabled = true
             }
+        }
+    }
+
+    private var appearanceSection: some View {
+        Section {
+            Picker("Appearance", selection: $appearance) {
+                ForEach(AppearancePreference.allCases) { option in
+                    Text(option.title).tag(option.rawValue)
+                }
+            }
+            .pickerStyle(.segmented)
+        } header: {
+            Text("Appearance")
+        } footer: {
+            Text("System follows your iPhone’s current appearance.")
         }
     }
 
