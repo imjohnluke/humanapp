@@ -23,7 +23,7 @@ struct HydrationWidgetEntry: TimelineEntry {
     let date: Date
     let data: HydrationWidgetData?
     var amount: Int { data?.amount(on: date) ?? 0 }
-    var goal: Int { data?.goalML ?? 2400 }
+    var goal: Int { data?.goalML ?? 3785 }
     var progress: Double { min(Double(amount) / Double(max(goal, 1)), 1) }
 }
 
@@ -42,7 +42,7 @@ struct HydrationWidgetView: View {
         case .accessoryRectangular:
             VStack(alignment: .leading) {
                 Label("human", systemImage: "drop.fill").font(.headline)
-                Text(entry.data == nil ? "Open app to sign in" : "\(max(entry.goal - entry.amount, 0)) ml left today").font(.caption)
+                Text(entry.data == nil ? "Open app to unlock widgets" : "\(max(entry.goal - entry.amount, 0)) ml left today").font(.caption)
                 ProgressView(value: entry.progress)
             }
         default:
@@ -53,7 +53,7 @@ struct HydrationWidgetView: View {
 
 struct HydrationWidgetProvider: TimelineProvider {
     func placeholder(in context: Context) -> HydrationWidgetEntry {
-        .init(date: .now, data: .init(goalML: 2400, drinks: [.init(date: .now, amountML: 1200)]))
+        .init(date: .now, data: .init(goalML: 3785, drinks: [.init(date: .now, amountML: 1200)]))
     }
     func getSnapshot(in context: Context, completion: @escaping (HydrationWidgetEntry) -> Void) {
         completion(context.isPreview ? placeholder(in: context) : .init(date: .now, data: .read()))

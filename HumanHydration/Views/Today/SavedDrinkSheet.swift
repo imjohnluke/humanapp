@@ -2,12 +2,10 @@ import SwiftUI
 
 struct SavedDrinkSheet: View {
     @EnvironmentObject private var store: HydrationStore
-    @EnvironmentObject private var subscriptions: SubscriptionService
     @Environment(\.dismiss) private var dismiss
     @State private var name = "My glass"
     @State private var capacity = "8"
     @State private var approximate = true
-    @State private var scanning = false
     private var validCapacity: Int? {
         return WaterVolume.milliliters(capacity, minimum: 40)
     }
@@ -35,11 +33,6 @@ struct SavedDrinkSheet: View {
                         }
                     }
                 }
-                if subscriptions.isPro {
-                    Section {
-                        Button { scanning = true } label: { Label("Scan my glass or bottle", systemImage: "camera") }
-                    } footer: { Text("Review the estimated full capacity, then save it for next time.") }
-                }
                 Section("Save a usual drink") {
                     TextField("Name", text: $name)
                     Menu("Choose an approximate size") {
@@ -64,8 +57,7 @@ struct SavedDrinkSheet: View {
             }
             .navigationTitle("My usual drinks").navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { dismiss() } } }
-            .fullScreenCover(isPresented: $scanning) { PhotoLogSheet() }
-        }.tint(.black)
+        }.tint(.blue)
     }
 }
 
@@ -116,7 +108,7 @@ struct DrinkSizeSheet: View {
         .presentationDetents([.fraction(0.75), .large])
         .presentationDragIndicator(.visible)
         .presentationBackground { HydrationTheme.canvas }
-        .tint(.black)
+        .tint(.blue)
     }
     private func choose(_ capacity: Int) {
         guard (40...7570).contains(capacity) else { return }

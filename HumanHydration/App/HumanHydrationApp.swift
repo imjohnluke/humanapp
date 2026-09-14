@@ -50,6 +50,7 @@ private struct AccountContentView: View {
             .environmentObject(health)
             .task { await health.refresh() }
             .task { await subscriptions.listen(auth: auth) }
+            .onChange(of: subscriptions.isPro, initial: true) { _, isPro in store.setWidgetAccess(isPro) }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { Task { await subscriptions.reconcileCurrent(auth: auth); await health.refresh() } }
             }
@@ -59,8 +60,12 @@ private struct AccountContentView: View {
 
 private struct AccountRoute: View {
     @AppStorage("hasCompletedOnboarding") private var completed = false
+    @AppStorage("appearancePreference") private var appearance = AppearancePreference.system.rawValue
     var body: some View {
-        if completed { RootView() } else { OnboardingView() }
+        Group {
+            if completed { RootView() } else { OnboardingView() }
+        }
+        .preferredColorScheme(AppearancePreference(rawValue: appearance)?.colorScheme)
     }
 }
 
@@ -386,49 +391,29 @@ struct BundledImage: View {
 
 struct RootView: View {
     @EnvironmentObject private var store: HydrationStore
-    @EnvironmentObject private var subscriptions: SubscriptionService
     @State private var selection = 0
-    @State private var showingPhotoLog = false
 
     var body: some View {
         TabView(selection: $selection) {
             TodayView().tag(0).toolbar(.hidden, for: .tabBar)
             InsightsView().tag(1).toolbar(.hidden, for: .tabBar)
+            PlanView().tag(2).toolbar(.hidden, for: .tabBar)
             ProfileView().tag(3).toolbar(.hidden, for: .tabBar)
         }
-        .tint(.black)
         .onAppear { store.publishWidgetData() }
         .safeAreaInset(edge: .bottom, spacing: 8) {
-            CompactNavigation(selection: $selection, isPro: subscriptions.isPro) { showingPhotoLog = true }
-        }
-        .fullScreenCover(isPresented: $showingPhotoLog) {
-            PhotoLogSheet(onLogged: { selection = 0 })
+            CompactNavigation(selection: $selection)
         }
     }
 }
 
 private struct CompactNavigation: View {
     @Binding var selection: Int
-    let isPro: Bool
-    let openPhotoLog: () -> Void
     var body: some View {
         HStack(spacing: 2) {
             navButton("Home", "house", 0)
             navButton("Insights", "chart.bar.xaxis", 1)
-            if isPro {
-                Button(action: openPhotoLog) {
-                    VStack(spacing: 3) {
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 20, weight: .light))
-                        Text("Scan").font(.system(size: 10, weight: .regular, design: .rounded))
-                    }
-                    .foregroundStyle(.black)
-                    .frame(maxWidth: .infinity).frame(height: 48)
-                    .contentShape(Capsule())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Scan water with a photo")
-            }
+            navButton("Plan", "list.bullet.clipboard", 2)
             navButton("Profile", "person.crop.circle", 3)
         }
         .padding(.horizontal, 6)
@@ -445,8 +430,9 @@ private struct CompactNavigation: View {
                     .environment(\.symbolVariants, .none)
                 Text(title).font(.system(size: 10, weight: .regular, design: .rounded))
             }
-            .foregroundStyle(.black).frame(maxWidth: .infinity).frame(height: 48)
-            .background(selection == tag ? Color.black.opacity(0.06) : Color.clear, in: Capsule())
+            .foregroundStyle(selection == tag ? Color.primary : Color.secondary)
+            .frame(maxWidth: .infinity).frame(height: 48)
+            .background(selection == tag ? Color.primary.opacity(0.075) : Color.clear, in: Capsule())
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -461,7 +447,7 @@ private struct LiquidGlassNavigation: ViewModifier {
         } else {
             content
                 .background(.ultraThinMaterial, in: Capsule())
-                .overlay(Capsule().stroke(.white.opacity(0.8), lineWidth: 1))
+                .overlay(Capsule().stroke(HydrationTheme.border, lineWidth: 1))
         }
     }
 }
