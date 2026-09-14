@@ -8,7 +8,7 @@ settings:
   base:
     DEVELOPMENT_TEAM: DWFW94687C
     CODE_SIGN_STYLE: Automatic
-    CURRENT_PROJECT_VERSION: "7"
+    CURRENT_PROJECT_VERSION: "8"
     MARKETING_VERSION: "1.0"
 targets:
   HumanHydration:
@@ -43,7 +43,7 @@ targets:
       INFOPLIST_KEY_UILaunchScreen_Generation: YES
       INFOPLIST_KEY_NSHumanReadableCopyright: ""
       GENERATE_INFOPLIST_FILE: YES
-      CURRENT_PROJECT_VERSION: "7"
+      CURRENT_PROJECT_VERSION: "8"
       MARKETING_VERSION: "1.0"
       SWIFT_VERSION: "5.9"
       TARGETED_DEVICE_FAMILY: "1,2"
