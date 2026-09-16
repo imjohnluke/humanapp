@@ -41,7 +41,7 @@ private struct AccountContentView: View {
         let defaults = AccountStorage.defaults(for: user.id)
         self.defaults = defaults
         _health = StateObject(wrappedValue: HealthKitService(defaults: defaults))
-        _subscriptions = StateObject(wrappedValue: SubscriptionService(accountID: user.id))
+        _subscriptions = StateObject(wrappedValue: SubscriptionService(accountID: user.id, defaults: defaults))
         _store = StateObject(wrappedValue: HydrationStore(defaults: defaults, accountID: user.id.uuidString.lowercased()))
     }
     var body: some View {
@@ -50,7 +50,12 @@ private struct AccountContentView: View {
             .environmentObject(health)
             .task { await health.refresh() }
             .task { await subscriptions.listen(auth: auth) }
-            .onChange(of: subscriptions.isPro, initial: true) { _, isPro in store.setWidgetAccess(isPro) }
+            .onChange(of: subscriptions.didApplyEntitlements) { _, applied in
+                if applied { store.setWidgetAccess(subscriptions.isPro) }
+            }
+            .onChange(of: subscriptions.isPro) { _, isPro in
+                if subscriptions.didApplyEntitlements { store.setWidgetAccess(isPro) }
+            }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { Task { await subscriptions.reconcileCurrent(auth: auth); await health.refresh() } }
             }

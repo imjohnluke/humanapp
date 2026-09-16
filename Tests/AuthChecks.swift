@@ -136,6 +136,7 @@ enum AuthChecks {
         let restored = makeAuth()
         await restored.restoreSession()
         precondition(restored.user?.id == userA && userRequests == 2, "Refresh must reverify the user")
+        precondition(defaults.string(forKey: "activeWidgetAccountID") == userA.uuidString.lowercased())
 
         vault.value = StoredSession(accessToken: "bad", refreshToken: "bad")
         AuthMockProtocol.handler = { request in
@@ -144,6 +145,7 @@ enum AuthChecks {
         let rejected = makeAuth()
         await rejected.restoreSession()
         precondition(!rejected.isAuthenticated && vault.value == nil)
+        precondition(defaults.string(forKey: "activeWidgetAccountID") == nil)
 
         let recovery = makeAuth()
         var recoveryRequests = 0

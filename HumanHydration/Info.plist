@@ -37,6 +37,8 @@
 	<string>Use your workout history and optional sleep records to personalize hydration check-ins on this device.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Human Hydration uses Health for optional routine insights. This version does not request permission to save or change your Health records.</string>
+	<key>PrivacyPolicyURL</key>
+	<string>https://humangoods.co/privacy.html</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

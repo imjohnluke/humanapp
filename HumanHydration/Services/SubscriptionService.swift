@@ -17,14 +17,19 @@ final class SubscriptionService: ObservableObject {
     @Published private(set) var products: [Product] = []
     @Published private(set) var isPro = false
     @Published private(set) var purchasesAvailable = false
+    @Published private(set) var didApplyEntitlements = false
     @Published private(set) var isBusy = false
     @Published var message: String?
     private let accountID: UUID
     private let session: URLSession
+    private let defaults: UserDefaults?
 
-    init(accountID: UUID, session: URLSession = .shared) {
+    init(accountID: UUID, session: URLSession = .shared, defaults: UserDefaults? = nil) {
         self.accountID = accountID
         self.session = session
+        self.defaults = defaults
+        isPro = defaults?.bool(forKey: "cachedIsPro") ?? false
+        purchasesAvailable = defaults?.bool(forKey: "cachedPurchasesAvailable") ?? false
     }
 
     func listen(auth: AuthService) async {
@@ -107,6 +112,9 @@ final class SubscriptionService: ObservableObject {
     private func apply(_ value: SubscriptionAccess) {
         isPro = value.isPro
         purchasesAvailable = value.purchasesAvailable
+        didApplyEntitlements = true
+        defaults?.set(value.isPro, forKey: "cachedIsPro")
+        defaults?.set(value.purchasesAvailable, forKey: "cachedPurchasesAvailable")
     }
 
     private func request(auth: AuthService, signedTransaction: String? = nil) async throws -> SubscriptionAccess {
