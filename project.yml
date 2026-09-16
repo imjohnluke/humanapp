@@ -21,6 +21,7 @@ targets:
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         ITSAppUsesNonExemptEncryption: false
+        PrivacyPolicyURL: https://humangoods.co/privacy.html
         NSHealthUpdateUsageDescription: Human Hydration uses Health for optional routine insights. This version does not request permission to save or change your Health records.
         NSHealthShareUsageDescription: Use your workout history and optional sleep records to personalize hydration check-ins on this device.
         UISupportedInterfaceOrientations:
@@ -48,8 +49,18 @@ targets:
       SWIFT_VERSION: "5.9"
       TARGETED_DEVICE_FAMILY: "1,2"
       CODE_SIGN_ENTITLEMENTS: HumanHydration/HumanHydration.entitlements
+    entitlements:
+      path: HumanHydration/HumanHydration.entitlements
+      properties:
+        com.apple.developer.healthkit: true
+        com.apple.security.application-groups:
+          - group.com.humanhydration.app
+        com.apple.developer.applesignin:
+          - Default
     capabilities:
       SignInWithApple: {}
+      appGroups:
+        - group.com.humanhydration.app
     dependencies:
       - target: HumanHydrationWidgets
         embed: true
@@ -75,3 +86,13 @@ targets:
       CODE_SIGN_ENTITLEMENTS: HumanHydration/Widgets/Widgets.entitlements
       APPLICATION_EXTENSION_API_ONLY: YES
       SKIP_INSTALL: YES
+      CURRENT_PROJECT_VERSION: "8"
+      MARKETING_VERSION: "1.0"
+    entitlements:
+      path: HumanHydration/Widgets/Widgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.humanhydration.app
+    capabilities:
+      appGroups:
+        - group.com.humanhydration.app

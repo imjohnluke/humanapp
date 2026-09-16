@@ -52,8 +52,6 @@ final class AuthService: ObservableObject {
         let operation = generation
         defer { isRestoring = false }
         defaults.removeObject(forKey: "isSignedIn")
-        defaults.removeObject(forKey: "activeWidgetAccountID")
-        clearWidgets()
         do {
             var saved = try vault.read()
             // Migrate tokens only after server verification. Never trust the legacy login flag.
@@ -62,7 +60,10 @@ final class AuthService: ObservableObject {
                let refresh = defaults.string(forKey: "supabaseRefreshToken") {
                 saved = StoredSession(accessToken: access, refreshToken: refresh)
             }
-            guard let saved else { return }
+            guard let saved else {
+                forgetWidgets()
+                return
+            }
             do {
                 try await accept(saved, expectedID: nil, operation: operation)
             } catch AuthError.http(let code, _) where code == 401 || code == 403 {
@@ -74,6 +75,7 @@ final class AuthService: ObservableObject {
             if case AuthError.http(let status, _) = error, (400...499).contains(status), status != 429 {
                 vault.clear()
                 removeLegacyTokens()
+                forgetWidgets()
             }
             errorMessage = "Please sign in again. " + friendlyMessage(for: error)
         }
@@ -256,10 +258,9 @@ final class AuthService: ObservableObject {
         vault.clear()
         removeLegacyTokens()
         defaults.removeObject(forKey: "isSignedIn")
-        defaults.removeObject(forKey: "activeWidgetAccountID")
+        forgetWidgets()
         errorMessage = nil
         confirmationMessage = nil
-        clearWidgets()
         if let tokens {
             Task {
                 // Local logout succeeds even offline. Revoke this server session when reachable.
@@ -282,6 +283,11 @@ final class AuthService: ObservableObject {
         } else {
             confirmationMessage = "Return to Sign in with your email and password to verify your account."
         }
+    }
+
+    private func forgetWidgets() {
+        defaults.removeObject(forKey: "activeWidgetAccountID")
+        clearWidgets()
     }
 
     private func removeLegacyTokens() {
