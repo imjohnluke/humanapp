@@ -96,7 +96,7 @@ struct HydrationWidgetCard: View {
                 } else {
                     Text("A little water.\nA better day.")
                         .font(.title3.weight(.regular))
-                    Text("Open Human Hydration to update")
+                    Text("Open Hydrate to update")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -135,7 +135,7 @@ struct HydrationWidgetCard: View {
                 ProgressView(value: progress)
                     .tint(.blue)
             } else {
-                Text("Open Human Hydration")
+                Text("Open Hydrate")
                     .font(.caption)
                 ProgressView(value: 0)
             }
@@ -144,7 +144,7 @@ struct HydrationWidgetCard: View {
     }
 
     private var accessibilityText: String {
-        guard signedIn else { return "Open Human Hydration to update widgets" }
+        guard signedIn else { return "Open Hydrate to update widgets" }
         return "\(WaterVolume.label(amount)) of \(WaterVolume.label(goal)), \(Int(progress * 100)) percent"
     }
 }

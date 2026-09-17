@@ -17,12 +17,12 @@ targets:
     info:
       path: HumanHydration/Info.plist
       properties:
-        CFBundleDisplayName: Human Hydration
+        CFBundleDisplayName: Hydrate
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         ITSAppUsesNonExemptEncryption: false
         PrivacyPolicyURL: https://humangoods.co/privacy.html
-        NSHealthUpdateUsageDescription: Human Hydration uses Health for optional routine insights. This version does not request permission to save or change your Health records.
+        NSHealthUpdateUsageDescription: Hydrate uses Health for optional routine insights. This version does not request permission to save or change your Health records.
         NSHealthShareUsageDescription: Use your workout history and optional sleep records to personalize hydration check-ins on this device.
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
@@ -40,7 +40,7 @@ targets:
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.humanhydration.app
       ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-      INFOPLIST_KEY_CFBundleDisplayName: Human Hydration
+      INFOPLIST_KEY_CFBundleDisplayName: Hydrate
       INFOPLIST_KEY_UILaunchScreen_Generation: YES
       INFOPLIST_KEY_NSHumanReadableCopyright: ""
       GENERATE_INFOPLIST_FILE: YES
@@ -73,14 +73,14 @@ targets:
     info:
       path: HumanHydration/Widgets/Info.plist
       properties:
-        CFBundleDisplayName: Human Hydration
+        CFBundleDisplayName: Hydrate
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.humanhydration.app.widgets
-      INFOPLIST_KEY_CFBundleDisplayName: Human Hydration
+      INFOPLIST_KEY_CFBundleDisplayName: Hydrate
       SWIFT_VERSION: "5.9"
       TARGETED_DEVICE_FAMILY: "1,2"
       CODE_SIGN_ENTITLEMENTS: HumanHydration/Widgets/Widgets.entitlements

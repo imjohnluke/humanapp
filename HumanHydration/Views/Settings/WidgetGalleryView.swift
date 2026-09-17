@@ -122,7 +122,7 @@ struct WidgetGalleryView: View {
                 .font(.headline.weight(.regular))
             step(1, "Touch and hold your Home Screen.")
             step(2, "Tap Edit, then Add Widget.")
-            step(3, "Search Human Hydration, then pick Daily hydration or Fill.")
+            step(3, "Search Hydrate, then pick Daily hydration or Fill.")
             Text("For Lock Screen widgets, touch and hold the Lock Screen, tap Customize, then add a circular or rectangular widget.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
