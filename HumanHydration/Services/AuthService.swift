@@ -250,6 +250,33 @@ final class AuthService: ObservableObject {
         }
     }
 
+    func deleteAccount() async -> Bool {
+        guard !isLoading, let userID = user?.id else { return false }
+        isLoading = true
+        errorMessage = nil
+        confirmationMessage = nil
+        defer { isLoading = false }
+        do {
+            let token = try await accessTokenForAPI()
+            var request = URLRequest(url: AppConfig.supabaseURL.appendingPathComponent("functions/v1/delete-account"))
+            request.httpMethod = "POST"
+            request.timeoutInterval = 30
+            request.cachePolicy = .reloadIgnoringLocalCacheData
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            request.setValue(AppConfig.supabasePublishableKey, forHTTPHeaderField: "apikey")
+            let (_, response) = try await session.data(for: request)
+            guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+                throw AuthError.http((response as? HTTPURLResponse)?.statusCode ?? 0, "Couldn’t delete your account. Check your connection and try again.")
+            }
+            AccountStorage.wipe(userID)
+            signOut()
+            return true
+        } catch {
+            errorMessage = "Couldn’t delete your account. Check your connection and try again."
+            return false
+        }
+    }
+
     func signOut() {
         cancelPasswordReset()
         let tokens = try? vault.read()

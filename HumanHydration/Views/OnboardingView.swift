@@ -54,7 +54,7 @@ struct OnboardingView: View {
             .safeAreaInset(edge: .bottom) {
                 VStack(spacing: 12) {
                     if step != 6 {
-                    Button(action: advance) {
+                    Button { Task { await advance() } } label: {
                         Text(step == 7 ? "Start my plan" : step == 5 ? "Create my plan" : step == 4 ? "Use this as my usual drink" : "Continue")
                             .font(.headline.weight(.regular))
                             .frame(maxWidth: .infinity)
@@ -114,7 +114,7 @@ struct OnboardingView: View {
                 .textContentType(.name)
                 .focused($nameFocused)
                 .submitLabel(.continue)
-                .onSubmit(advance)
+                .onSubmit { Task { await advance() } }
                 .padding(.horizontal, 18)
                 .frame(height: 56)
                 .modifier(LiquidGlassSurface(shape: .rounded(20)))
@@ -196,10 +196,8 @@ struct OnboardingView: View {
             Text("Check your glass or bottle’s size and adjust if needed. This will be your usual drink.")
                 .font(.caption).foregroundStyle(.secondary)
         case 5:
-            HealthConnectionCard()
+            HealthConnectionCard(showsConnectAction: false)
                 .padding(22).modifier(LiquidGlassSurface(shape: .rounded(28)))
-            Text("You can skip this and connect later in Settings.")
-                .font(.caption).foregroundStyle(.secondary)
         case 6:
             ZStack {
                 Circle().stroke(.blue.opacity(0.1), lineWidth: 12)
@@ -261,13 +259,17 @@ struct OnboardingView: View {
             .padding(16).modifier(LiquidGlassSurface(shape: .rounded(20)))
     }
 
-    private func advance() {
+    private func advance() async {
         if step == 7 {
             if subscriptions.isPro { completed = true } else { showingPro = true }
             return
         }
         guard step != 6 else { return }
-        if step == 5 { withAnimation(reduceMotion ? nil : .easeInOut) { step = 6 }; return }
+        if step == 5 {
+            if health.available { await health.connect() }
+            withAnimation(reduceMotion ? nil : .easeInOut) { step = 6 }
+            return
+        }
         guard step != 0 || !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         nameFocused = false
         if step < 4 {

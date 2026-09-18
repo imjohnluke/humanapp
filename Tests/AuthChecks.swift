@@ -210,6 +210,52 @@ enum AuthChecks {
         precondition(storeB.displayName.isEmpty && storeB.entries.isEmpty && !b.bool(forKey: "hasCompletedOnboarding"))
         let returningA = HydrationStore(defaults: AccountStorage.defaults(for: userA))
         precondition(returningA.displayName == "Account A" && returningA.todayAmountML == 500 && a.bool(forKey: "hasCompletedOnboarding"))
-        print("PASS: legacy bypass, malformed session, pending signup + redirect, identity mismatch, verified login, safe callback, logout, refresh, invalid session, PKCE recovery, account isolation + onboarding persistence.")
+
+        AuthMockProtocol.handler = { request in
+            if request.url!.path == "/auth/v1/user" { return (200, userJSON(userA)) }
+            if request.url!.path == "/auth/v1/logout" { return (204, "") }
+            return (200, tokenJSON(userA))
+        }
+        let retained = makeAuth()
+        let retainedOK = await retained.signIn(email: "test@example.com", password: "password123")
+        precondition(retainedOK)
+        retained.signOut()
+        try await Task.sleep(nanoseconds: 100_000_000)
+        precondition(AccountStorage.defaults(for: userA).bool(forKey: "hasCompletedOnboarding"), "Logout must not wipe account data")
+
+        AuthMockProtocol.handler = { request in
+            if request.url!.path == "/auth/v1/user" { return (200, userJSON(userA)) }
+            return (200, tokenJSON(userA))
+        }
+        let deleting = makeAuth()
+        let deletingOK = await deleting.signIn(email: "test@example.com", password: "password123")
+        precondition(deletingOK)
+        AuthMockProtocol.handler = { request in
+            if request.url!.path == "/auth/v1/user" { return (200, userJSON(userA)) }
+            precondition(request.url!.path.contains("delete-account"))
+            precondition(request.httpMethod == "POST")
+            return (503, "{\"error\":\"unavailable\"}")
+        }
+        let failedDelete = await deleting.deleteAccount()
+        precondition(!failedDelete && deleting.isAuthenticated && deleting.errorMessage != nil)
+        precondition(AccountStorage.defaults(for: userA).bool(forKey: "hasCompletedOnboarding"), "Failed deletion must keep local data")
+
+        AuthMockProtocol.handler = { request in
+            if request.url!.path == "/auth/v1/user" { return (200, userJSON(userA)) }
+            if request.url!.path.contains("delete-account") {
+                precondition(request.value(forHTTPHeaderField: "Authorization") == "Bearer mock-access")
+                return (200, "{\"deleted\":true}")
+            }
+            if request.url!.path == "/auth/v1/logout" { return (204, "") }
+            return (200, tokenJSON(userA))
+        }
+        let deleted = await deleting.deleteAccount()
+        precondition(deleted && !deleting.isAuthenticated && vault.value == nil)
+        try await Task.sleep(nanoseconds: 100_000_000)
+        let wiped = HydrationStore(defaults: AccountStorage.defaults(for: userA))
+        precondition(wiped.displayName.isEmpty && wiped.entries.isEmpty && !AccountStorage.defaults(for: userA).bool(forKey: "hasCompletedOnboarding"))
+        let signedOutDelete = await makeAuth().deleteAccount()
+        precondition(!signedOutDelete, "Signed-out delete must not reach the server")
+        print("PASS: legacy bypass, malformed session, pending signup + redirect, identity mismatch, verified login, safe callback, logout, refresh, invalid session, PKCE recovery, account isolation + onboarding persistence, account deletion.")
     }
 }
