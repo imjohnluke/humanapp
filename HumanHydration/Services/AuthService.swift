@@ -111,7 +111,7 @@ final class AuthService: ObservableObject {
             guard operation == generation else { return }
             recoveryVerifier = verifier
             recoveryEmail = clean
-            confirmationMessage = "If that account exists, we’ve sent a reset link. Open it on this device without quitting Human Hydration."
+            confirmationMessage = "If that account exists, we’ve sent a reset link. Open it on this device without quitting Hydrate."
         } catch {
             if operation == generation { errorMessage = friendlyMessage(for: error) }
         }

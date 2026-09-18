@@ -1,6 +1,6 @@
-# Human Hydration
+# Hydrate
 
-Native SwiftUI iOS app for simple, satisfying hydration tracking.
+Native SwiftUI iOS app for simple, satisfying hydration tracking, by Human Goods.
 
 ## Backend foundation
 

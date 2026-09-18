@@ -73,7 +73,7 @@ struct HealthConnectionCard: View {
                 if health.enabled {
                     Text("Access requested · \(health.workouts.count) workouts available")
                         .font(.caption).foregroundStyle(.secondary)
-                    Text("No data? You may have no records or sharing may be off. Review permissions in Health → your profile → Apps → Human Hydration.")
+                    Text("No data? You may have no records or sharing may be off. Review permissions in Health → your profile → Apps → Hydrate.")
                         .font(.caption).foregroundStyle(.secondary)
                     if showsConnectAction {
                         if !health.sleepEnabled {

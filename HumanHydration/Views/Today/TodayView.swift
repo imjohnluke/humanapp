@@ -15,7 +15,7 @@ struct TodayView: View {
                         HStack(spacing: 8) {
                             BundledLogoImage(name: "human-logo-mark")
                                 .frame(width: 28, height: 28)
-                            Text("Human Hydration").font(.title3.weight(.regular)).foregroundStyle(.primary)
+                            Text("Hydrate").font(.title3.weight(.regular)).foregroundStyle(.primary)
                         }
                         Spacer()
                         Button { historyMetric = .streak } label: {

@@ -78,7 +78,7 @@ struct SettingsView: View {
                     HealthConnectionCard()
                 }
                 Section("About") {
-                    LabeledContent("App", value: "Human Hydration")
+                    LabeledContent("App", value: "Hydrate: By Human Goods")
                     LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0")
                     Text("Hydration goals are editable tracking targets, not medical advice. Follow any fluid limits given by your clinician.")
                         .font(.caption).foregroundStyle(.secondary)
@@ -169,7 +169,7 @@ struct SettingsView: View {
                 let service = ReminderService()
                 guard try await service.requestPermission() else {
                     remindersEnabled = false
-                    reminderError = "Notifications are off. Enable them for Human Hydration in iPhone Settings."
+                    reminderError = "Notifications are off. Enable them for Hydrate in iPhone Settings."
                     return
                 }
                 guard auth.isAuthenticated else { return }

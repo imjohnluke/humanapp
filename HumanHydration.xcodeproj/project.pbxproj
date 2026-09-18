@@ -646,7 +646,7 @@
 				CURRENT_PROJECT_VERSION = 12;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = HumanHydration/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Human Hydration";
+				INFOPLIST_KEY_CFBundleDisplayName = Hydrate;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -668,7 +668,7 @@
 				CODE_SIGN_ENTITLEMENTS = HumanHydration/Widgets/Widgets.entitlements;
 				CURRENT_PROJECT_VERSION = 12;
 				INFOPLIST_FILE = HumanHydration/Widgets/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Human Hydration";
+				INFOPLIST_KEY_CFBundleDisplayName = Hydrate;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -690,7 +690,7 @@
 				CODE_SIGN_ENTITLEMENTS = HumanHydration/Widgets/Widgets.entitlements;
 				CURRENT_PROJECT_VERSION = 12;
 				INFOPLIST_FILE = HumanHydration/Widgets/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Human Hydration";
+				INFOPLIST_KEY_CFBundleDisplayName = Hydrate;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -714,7 +714,7 @@
 				CURRENT_PROJECT_VERSION = 12;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = HumanHydration/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Human Hydration";
+				INFOPLIST_KEY_CFBundleDisplayName = Hydrate;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
