@@ -60,6 +60,7 @@ struct RoutineWeekChart: View {
 
 struct HealthConnectionCard: View {
     @EnvironmentObject private var health: HealthKitService
+    var showsConnectAction = true
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Label("Apple Health", systemImage: "heart.fill")
@@ -74,17 +75,19 @@ struct HealthConnectionCard: View {
                         .font(.caption).foregroundStyle(.secondary)
                     Text("No data? You may have no records or sharing may be off. Review permissions in Health → your profile → Apps → Human Hydration.")
                         .font(.caption).foregroundStyle(.secondary)
-                    if !health.sleepEnabled {
-                        Button("Include sleep") { Task { await health.connect(includeSleep: true) } }
-                    } else {
-                        Text("Sleep access requested").font(.caption).foregroundStyle(.secondary)
+                    if showsConnectAction {
+                        if !health.sleepEnabled {
+                            Button("Include sleep") { Task { await health.connect(includeSleep: true) } }
+                        } else {
+                            Text("Sleep access requested").font(.caption).foregroundStyle(.secondary)
+                        }
+                        HStack {
+                            Button("Refresh") { Task { await health.refresh() } }
+                            Spacer()
+                            Button("Disconnect", role: .destructive) { health.disconnect() }
+                        }
                     }
-                    HStack {
-                        Button("Refresh") { Task { await health.refresh() } }
-                        Spacer()
-                        Button("Disconnect", role: .destructive) { health.disconnect() }
-                    }
-                } else {
+                } else if showsConnectAction {
                     Button { Task { await health.connect() } } label: {
                         HStack {
                             if health.busy { ProgressView() }
@@ -96,7 +99,9 @@ struct HealthConnectionCard: View {
                 Text("Apple Health isn’t available on this device.").font(.subheadline)
             }
             if let error = health.error { Text(error).font(.caption).foregroundStyle(.red) }
-            Text("Optional. You choose what to share. Health data is processed on this device and isn’t sent to AI. Disconnecting stops access in this app; manage Apple permissions in Health.")
+            Text(showsConnectAction
+                 ? "Optional. You choose what to share. Health data is processed on this device and isn’t sent to AI. Disconnecting stops access in this app; manage Apple permissions in Health."
+                 : "You’ll choose what to share in Apple’s permission screen. Health data is processed on this device and isn’t sent to AI.")
                 .font(.caption).foregroundStyle(.secondary)
         }.disabled(health.busy)
             .frame(maxWidth: .infinity, alignment: .leading)

@@ -425,3 +425,8 @@ verify_jwt = false
 [functions.apple-notifications]
 # Apple JWS signatures are verified before any side effect.
 verify_jwt = false
+
+[functions.delete-account]
+# The handler verifies the bearer token with Auth /user before deleting.
+# Gateway JWT verification is incompatible with newer publishable-key setups.
+verify_jwt = false

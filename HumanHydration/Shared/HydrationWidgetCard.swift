@@ -9,7 +9,6 @@ struct HydrationWidgetCard: View {
     let goal: Int
     var style: HydrationWidgetStyle = .small
     var signedIn = true
-    var includeFill = true
 
     private var progress: Double { min(Double(amount) / Double(max(goal, 1)), 1) }
     private var remaining: Int { max(goal - amount, 0) }
@@ -61,7 +60,7 @@ struct HydrationWidgetCard: View {
     private var fillLayout: some View {
         let fill = signedIn ? progress : 0
         return ZStack(alignment: .bottomTrailing) {
-            if includeFill { HydrationWidgetWaterFill(progress: fill) }
+            HydrationWidgetWaterFill(progress: fill)
             Text(signedIn ? "\(Int((fill * 100).rounded()))%" : "")
                 .font(.system(size: 11, weight: .regular, design: .rounded))
                 .monospacedDigit()
@@ -200,24 +199,23 @@ struct HydrationWidgetWaterFill: View {
 
     var body: some View {
         let fill = min(max(progress, 0), 1)
-        GeometryReader { _ in
-            ZStack {
-                HydrationWidgetWater(progress: fill, phase: 0.35, amplitude: 6)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.62, green: 0.84, blue: 1.0),
-                                Color(red: 0.20, green: 0.54, blue: 0.95),
-                                Color(red: 0.08, green: 0.38, blue: 0.84)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
+        ZStack {
+            HydrationWidgetWater(progress: fill, phase: 0.35, amplitude: 6)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.62, green: 0.84, blue: 1.0),
+                            Color(red: 0.20, green: 0.54, blue: 0.95),
+                            Color(red: 0.08, green: 0.38, blue: 0.84)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
                     )
-                HydrationWidgetWater(progress: fill, phase: 2.1, amplitude: 3.5)
-                    .fill(Color.white.opacity(fill >= 1 ? 0.08 : 0.20))
-            }
+                )
+            HydrationWidgetWater(progress: fill, phase: 2.1, amplitude: 3.5)
+                .fill(Color.white.opacity(fill >= 1 ? 0.08 : 0.20))
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
     }

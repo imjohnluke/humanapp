@@ -38,7 +38,6 @@ struct HydrationWidgetEntry: TimelineEntry {
     let data: HydrationWidgetData?
     var amount: Int { data?.amount(on: date) ?? 0 }
     var goal: Int { data?.goalML ?? 3785 }
-    var progress: Double { min(Double(amount) / Double(max(goal, 1)), 1) }
 }
 
 struct HydrationWidgetView: View {
@@ -50,22 +49,14 @@ struct HydrationWidgetView: View {
             amount: entry.amount,
             goal: entry.goal,
             style: style,
-            signedIn: entry.data != nil,
-            includeFill: !fill
+            signedIn: entry.data != nil
         )
         .containerBackground(for: .widget) {
             switch family {
             case .accessoryCircular, .accessoryRectangular, .accessoryInline:
                 AccessoryWidgetBackground()
             default:
-                if fill {
-                    ZStack {
-                        HydrationWidgetBackground()
-                        HydrationWidgetWaterFill(progress: entry.data == nil ? 0 : entry.progress)
-                    }
-                } else {
-                    HydrationWidgetBackground()
-                }
+                HydrationWidgetBackground()
             }
         }
     }

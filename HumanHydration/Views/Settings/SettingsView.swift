@@ -10,6 +10,8 @@ struct SettingsView: View {
     @State private var reminderTime = Calendar.current.date(from: DateComponents(hour: 10)) ?? .now
     @State private var savingReminder = false
     @State private var reminderError: String?
+    @State private var confirmingDelete = false
+    @State private var deletingAccount = false
     @AppStorage("appearancePreference") private var appearance = AppearancePreference.system.rawValue
     var title: String = "Settings"
     var body: some View {
@@ -92,12 +94,46 @@ struct SettingsView: View {
                     .buttonStyle(.borderedProminent).tint(.red)
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets())
+                    .disabled(auth.isLoading)
+                }
+                Section {
+                    Button(role: .destructive) {
+                        confirmingDelete = true
+                    } label: {
+                        HStack {
+                            if deletingAccount { ProgressView() }
+                            Text("Delete account").font(.headline.weight(.regular))
+                                .frame(maxWidth: .infinity).padding(.vertical, 8)
+                        }
+                    }
+                    .buttonStyle(.borderedProminent).tint(.red)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
+                    .disabled(auth.isLoading || deletingAccount)
+                    if let error = auth.errorMessage, !deletingAccount {
+                        Text(error).font(.caption).foregroundStyle(.red)
+                    }
+                } footer: {
+                    Text("Permanently deletes your account and the hydration data stored for it. Apple subscriptions are billed separately and can be canceled in Manage subscription.")
                 }
             }.navigationTitle(title)
                 .scrollContentBackground(.hidden)
                 .background(HydrationTheme.canvas.ignoresSafeArea())
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
                 .sheet(isPresented: $showingBottlePicker) { BottlePickerSheet() }
+                .alert("Delete your account?", isPresented: $confirmingDelete) {
+                    Button("Delete account", role: .destructive) {
+                        Task {
+                            deletingAccount = true
+                            let deleted = await auth.deleteAccount()
+                            deletingAccount = false
+                            if deleted { dismiss() }
+                        }
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("This permanently deletes your Human Hydration account and the data stored for it. This cannot be undone. Apple subscriptions stay with your Apple ID until you cancel them.")
+                }
         }
         .task {
             let requests = await UNUserNotificationCenter.current().pendingNotificationRequests()
