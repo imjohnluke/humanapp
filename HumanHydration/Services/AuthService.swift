@@ -33,6 +33,8 @@ final class AuthService: ObservableObject {
     private var recoveryVerifier: String?
     private var recoveryEmail: String?
     private var recoveryToken: String?
+    private var acceptingAppleSignIn = false
+    private var appleSignInName: String?
     var isAuthenticated: Bool { user != nil }
     private let session: URLSession
     private let vault: any SessionVault
@@ -192,7 +194,7 @@ final class AuthService: ObservableObject {
         }
     }
 
-    func signInWithApple(idToken: String, nonce: String) async {
+    func signInWithApple(idToken: String, nonce: String, fullName: String? = nil) async {
         guard !isLoading, !isAuthenticated else { return }
         guard !idToken.isEmpty, !nonce.isEmpty else {
             errorMessage = "Apple didn’t return a valid sign-in token. Please try again."
@@ -205,7 +207,14 @@ final class AuthService: ObservableObject {
         isLoading = true
         errorMessage = nil
         let operation = generation
-        defer { isLoading = false }
+        let trimmedName = fullName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        acceptingAppleSignIn = true
+        appleSignInName = trimmedName.isEmpty ? nil : trimmedName
+        defer {
+            isLoading = false
+            acceptingAppleSignIn = false
+            appleSignInName = nil
+        }
         do {
             let response: AuthResponse = try await request(path: "/auth/v1/token?grant_type=id_token", body: ["provider": "apple", "id_token": idToken, "nonce": nonce])
             try await accept(response, operation: operation)
@@ -228,9 +237,22 @@ final class AuthService: ObservableObject {
         try vault.save(tokens)
         removeLegacyTokens()
         defaults.set(verified.id.uuidString.lowercased(), forKey: "activeWidgetAccountID")
+        // Save Apple’s name before publishing the session so onboarding never asks for it again.
+        applyAppleProfile(to: verified.id)
         errorMessage = nil
         confirmationMessage = nil
         user = verified
+    }
+
+    private func applyAppleProfile(to userID: UUID) {
+        guard acceptingAppleSignIn else { return }
+        let accountDefaults = AccountStorage.defaults(for: userID)
+        accountDefaults.set(true, forKey: "signedInWithApple")
+        guard let appleSignInName else { return }
+        let existing = accountDefaults.string(forKey: "displayName")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if existing.isEmpty {
+            accountDefaults.set(appleSignInName, forKey: "displayName")
+        }
     }
 
     /// Return a verified, refreshed session for authenticated app API calls.

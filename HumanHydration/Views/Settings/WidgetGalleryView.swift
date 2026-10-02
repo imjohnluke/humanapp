@@ -14,6 +14,7 @@ struct WidgetGalleryView: View {
             VStack(alignment: .leading, spacing: 28) {
                 header
                 if !subscriptions.isPro { proCallout }
+                islandStage
                 homeStage
                 lockStage
                 howToAdd
@@ -32,7 +33,7 @@ struct WidgetGalleryView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("At a glance")
                 .font(.title.weight(.regular))
-            Text("Choose a ring, a fill, or a Lock Screen glance. These previews use today’s numbers.")
+            Text("Press and hold the Dynamic Island to log water, or tap Log on a Home Screen widget. These previews use today’s numbers.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -52,6 +53,35 @@ struct WidgetGalleryView: View {
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .modifier(LiquidGlassSurface(shape: .rounded(24)))
+    }
+
+    private var islandStage: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            stageLabel("Dynamic Island", "iphone")
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Spacer(minLength: 0)
+                    HStack(spacing: 10) {
+                        Image(systemName: "drop.fill").foregroundStyle(.cyan)
+                        Text("\(Int((Double(amount) / Double(max(goal, 1)) * 100).rounded()))%")
+                            .font(.subheadline.weight(.semibold).monospacedDigit())
+                            .foregroundStyle(.white)
+                    }
+                    .padding(.horizontal, 16)
+                    .frame(width: 168, height: 37)
+                    .background(.black, in: Capsule())
+                    Spacer(minLength: 0)
+                }
+                .padding(.vertical, 18)
+                .frame(maxWidth: .infinity)
+                .background(Color(red: 0.05, green: 0.07, blue: 0.09))
+                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                LiveIslandControl()
+                Text("Press and hold the island. It drops open with today’s fill and a Log button for \(store.selectedDrink.map { BottleCatalog.displayName($0.name) } ?? "your usual drink").")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
     }
 
     private var homeStage: some View {
@@ -122,7 +152,7 @@ struct WidgetGalleryView: View {
                 .font(.headline.weight(.regular))
             step(1, "Touch and hold your Home Screen.")
             step(2, "Tap Edit, then Add Widget.")
-            step(3, "Search Human Hydration, then pick Daily hydration or Fill.")
+            step(3, "Search Human Hydration, then pick Daily hydration or Fill. Tap + or Log to add your usual drink.")
             Text("For Lock Screen widgets, touch and hold the Lock Screen, tap Customize, then add a circular or rectangular widget.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -189,5 +219,33 @@ struct WidgetGalleryView: View {
             startPoint: .top,
             endPoint: .bottom
         )
+    }
+}
+
+struct LiveIslandControl: View {
+    @EnvironmentObject private var store: HydrationStore
+    @EnvironmentObject private var subscriptions: SubscriptionService
+    @State private var showingPro = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if subscriptions.isPro {
+                Toggle("Show hydration live", isOn: $store.liveIslandEnabled)
+                Text("Logs \(store.selectedDrink.map { BottleCatalog.displayName($0.name) } ?? "a glass") · \(WaterVolume.label(store.selectedDrink?.capacityML ?? 250)).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if let message = store.liveIslandMessage {
+                    Text(message).font(.caption).foregroundStyle(.red)
+                }
+            } else {
+                Text("Live hydration on your iPhone is part of Human Pro.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Button("Explore Human Pro") { showingPro = true }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.blue)
+            }
+        }
+        .sheet(isPresented: $showingPro) { ProSubscriptionSheet() }
     }
 }

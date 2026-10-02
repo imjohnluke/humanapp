@@ -45,6 +45,7 @@
 		BBB278A50DB2325889ABD0C1 /* SessionVault.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB213BC40EADA2B4C4B1C0D1 /* SessionVault.swift */; };
 		C51DC7CD47158AC790E1FED2 /* SubscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56781D0898976C47AB22F8DE /* SubscriptionService.swift */; };
 		CE9E506FC7BAF03D887EB4E0 /* HydrationWidgetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 978A3080A36D408F5CAFD814 /* HydrationWidgetData.swift */; };
+		C9E530B2D6F47130A8C26E33 /* HydrationActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C31E90B4D25F18E6A04C11 /* HydrationActivity.swift */; };
 		CFA57712F138A704AC60413E /* HydrationStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 338D6CDCEB5AD6C028BDAF48 /* HydrationStore.swift */; };
 		D3EB46FAC6E16096D13C0763 /* HealthConnectionCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D59E567B783A70187AC351A /* HealthConnectionCard.swift */; };
 		D8C632D73E2EC08C67B25C3C /* gallon-clear.png in Resources */ = {isa = PBXBuildFile; fileRef = 0FFD2150F77A5FB0103C7B38 /* gallon-clear.png */; };
@@ -54,6 +55,7 @@
 		EB218B67DEF2C30A3D188240 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = B022C2322228053C9C2392D8 /* PrivacyInfo.xcprivacy */; };
 		EC1C48C2B6A9701D0983DC9F /* gatorade.png in Resources */ = {isa = PBXBuildFile; fileRef = 843189EC3643B125B0CB0FAF /* gatorade.png */; };
 		EE54744ECEA7EAFE7A1226D3 /* HydrationWidgetData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 978A3080A36D408F5CAFD814 /* HydrationWidgetData.swift */; };
+		B8D42FA1C5E36029F7B15D22 /* HydrationActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7C31E90B4D25F18E6A04C11 /* HydrationActivity.swift */; };
 		F2229A0F03AEF1991390BB6F /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22E9C47FB9369332F3F23B4F /* OnboardingView.swift */; };
 		F3403EEAC53DCB874B7E6463 /* AccountStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 867BEA0F11C50E1778C59F85 /* AccountStorage.swift */; };
 		F4454B0666AC783CF6BD7B81 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DD7303E4F24AB6F0DEACCA4 /* HistoryView.swift */; };
@@ -122,6 +124,7 @@
 		8D9AEE560599307D49234FE2 /* mountain-valley-clear.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "mountain-valley-clear.png"; sourceTree = "<group>"; };
 		93F9627E31CBE78FAB34F8A4 /* human-logo-wordmark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "human-logo-wordmark.png"; sourceTree = "<group>"; };
 		978A3080A36D408F5CAFD814 /* HydrationWidgetData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HydrationWidgetData.swift; sourceTree = "<group>"; };
+		A7C31E90B4D25F18E6A04C11 /* HydrationActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HydrationActivity.swift; sourceTree = "<group>"; };
 		9A63D1850057EEAB8BC5A97C /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		9B86F048B17780B7E92C04D6 /* HumanHydrationApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HumanHydrationApp.swift; sourceTree = "<group>"; };
 		9DCE9A7EA0DE94319D2183A9 /* PlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanView.swift; sourceTree = "<group>"; };
@@ -222,6 +225,7 @@
 		60353C5D868B7FA3D39A4FEC /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				A7C31E90B4D25F18E6A04C11 /* HydrationActivity.swift */,
 				F79537E469B8F45B850B7B86 /* HydrationWidgetCard.swift */,
 				978A3080A36D408F5CAFD814 /* HydrationWidgetData.swift */,
 				B6400E7E3267D06676E6B2B8 /* WaterVolume.swift */,
@@ -470,6 +474,7 @@
 				6B7A32CDCFCB0D342322A3A1 /* HydrationEntry.swift in Sources */,
 				95D4D0964CD26B9DB0EADD8F /* HydrationGoalCalculator.swift in Sources */,
 				CFA57712F138A704AC60413E /* HydrationStore.swift in Sources */,
+				B8D42FA1C5E36029F7B15D22 /* HydrationActivity.swift in Sources */,
 				617ABF7E371461846509A00A /* HydrationWidgetCard.swift in Sources */,
 				EE54744ECEA7EAFE7A1226D3 /* HydrationWidgetData.swift in Sources */,
 				15BC73099F53772CB68DFF26 /* InsightsView.swift in Sources */,
@@ -493,6 +498,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				522E13C23903AFB5418CA7AE /* HumanHydrationWidget.swift in Sources */,
+				C9E530B2D6F47130A8C26E33 /* HydrationActivity.swift in Sources */,
 				040B4193812B3E68DB274900 /* HydrationWidgetCard.swift in Sources */,
 				CE9E506FC7BAF03D887EB4E0 /* HydrationWidgetData.swift in Sources */,
 				B933DAFB6B96E2D37CF0EA97 /* WaterVolume.swift in Sources */,

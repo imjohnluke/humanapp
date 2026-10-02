@@ -9,6 +9,9 @@ struct HydrationWidgetCard: View {
     let goal: Int
     var style: HydrationWidgetStyle = .small
     var signedIn = true
+    var showsLogButton = false
+    var logAmountML = 250
+    var logName = "Glass"
 
     private var progress: Double { min(Double(amount) / Double(max(goal, 1)), 1) }
     private var remaining: Int { max(goal - amount, 0) }
@@ -26,8 +29,35 @@ struct HydrationWidgetCard: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .fontDesign(.rounded)
-        .accessibilityElement(children: .combine)
+        .overlay(alignment: .topTrailing) {
+            if showsLogButton && style != .medium && style != .lockCircular && style != .lockRectangular {
+                logButton(compact: true)
+            }
+        }
+        .accessibilityElement(children: showsLogButton ? .contain : .combine)
         .accessibilityLabel(accessibilityText)
+    }
+
+    private func logButton(compact: Bool) -> some View {
+        Button(intent: LogWaterIntent(amountML: logAmountML)) {
+            if compact {
+                Image(systemName: "plus")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 26, height: 26)
+                    .background(.blue, in: Circle())
+            } else {
+                Text("Log \(WaterVolume.label(logAmountML))")
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(.blue, in: Capsule())
+            }
+        }
+        .buttonStyle(.plain)
+        .padding(compact ? 8 : 0)
+        .accessibilityLabel("Log \(logName), \(WaterVolume.label(logAmountML))")
     }
 
     private var smallLayout: some View {
@@ -92,6 +122,7 @@ struct HydrationWidgetCard: View {
                         .foregroundStyle(.secondary)
                         .minimumScaleFactor(0.8)
                         .lineLimit(1)
+                    if showsLogButton { logButton(compact: false) }
                 } else {
                     Text("A little water.\nA better day.")
                         .font(.title3.weight(.regular))

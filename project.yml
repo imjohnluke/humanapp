@@ -17,6 +17,7 @@ targets:
     info:
       path: HumanHydration/Info.plist
       properties:
+        NSSupportsLiveActivities: true
         CFBundleDisplayName: Human Hydration
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
@@ -73,6 +74,7 @@ targets:
     info:
       path: HumanHydration/Widgets/Info.plist
       properties:
+        NSSupportsLiveActivities: true
         CFBundleDisplayName: Human Hydration
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         CFBundleShortVersionString: "$(MARKETING_VERSION)"

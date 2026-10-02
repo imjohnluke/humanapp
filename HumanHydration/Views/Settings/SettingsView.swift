@@ -4,6 +4,7 @@ import UserNotifications
 struct SettingsView: View {
     @EnvironmentObject private var store: HydrationStore
     @EnvironmentObject private var auth: AuthService
+    @EnvironmentObject private var subscriptions: SubscriptionService
     @Environment(\.dismiss) private var dismiss
     @State private var showingBottlePicker = false
     @State private var remindersEnabled = false
@@ -53,6 +54,13 @@ struct SettingsView: View {
                     Link(destination: URL(string: "https://apps.apple.com/account/subscriptions")!) {
                         Label("Manage subscription", systemImage: "creditcard")
                     }
+                }
+                Section {
+                    LiveIslandControl()
+                } header: {
+                    Text("Dynamic Island")
+                } footer: {
+                    Text("Pro can keep today’s water on your iPhone. Press and hold the island, then tap Log to add your usual drink. Home Screen widgets use the same Log button.")
                 }
                 Section {
                     NavigationLink { WidgetGalleryView() } label: {

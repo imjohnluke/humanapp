@@ -7,6 +7,7 @@ struct OnboardingView: View {
     @State private var showingPro = false
     @State private var showingIntro = true
     @AppStorage("hasCompletedOnboarding") private var completed = false
+    @AppStorage("signedInWithApple") private var signedInWithApple = false
     @AppStorage("profileAge") private var savedAge = 25
     @AppStorage("profileHeightCM") private var savedHeight = 170
     @AppStorage("profileWeightPounds") private var savedWeight = 170
@@ -28,6 +29,8 @@ struct OnboardingView: View {
     @FocusState private var nameFocused: Bool
 
     private let bottles: [(asset: String, name: String, capacity: Int)] = BottleCatalog.options.map { ($0.0, $0.1, $0.2) }
+    /// Apple already supplied the name when Sign in with Apple was used, so that step is not shown again.
+    private var currentStep: Int { signedInWithApple && step < 1 ? 1 : step }
     private let titles = ["Your name?", "Your age?", "Your height?",
                           "How often do you work out?", "Your everyday glass or bottle",
                           "Connect Apple Health", "Creating your personal hydration plan", "Your hydration plan"]
@@ -39,7 +42,7 @@ struct OnboardingView: View {
                 ScrollView {
                     VStack(spacing: 22) {
                         Spacer(minLength: 24)
-                        Text(titles[step])
+                        Text(titles[currentStep])
                             .font(.title2.weight(.regular))
                         stepContent
                         Spacer(minLength: 24)
@@ -53,16 +56,16 @@ struct OnboardingView: View {
             }
             .safeAreaInset(edge: .bottom) {
                 VStack(spacing: 12) {
-                    if step != 6 {
+                    if currentStep != 6 {
                     Button { Task { await advance() } } label: {
-                        Text(step == 7 ? "Start my plan" : step == 5 ? "Create my plan" : step == 4 ? "Use this as my usual drink" : "Continue")
+                        Text(currentStep == 7 ? "Start my plan" : currentStep == 5 ? "Create my plan" : currentStep == 4 ? "Use this as my usual drink" : "Continue")
                             .font(.headline.weight(.regular))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.blue)
-                    .disabled(health.busy || (step == 0 && name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) || (step == 4 && selectedBottle != nil && WaterVolume.milliliters(drinkCapacity, minimum: 40) == nil))
+                    .disabled(health.busy || (currentStep == 0 && name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) || (currentStep == 4 && selectedBottle != nil && WaterVolume.milliliters(drinkCapacity, minimum: 40) == nil))
                     }
                 }
                 .frame(maxWidth: 460)
@@ -106,7 +109,7 @@ struct OnboardingView: View {
 
     @ViewBuilder
     private var stepContent: some View {
-        switch step {
+        switch currentStep {
         case 0:
             Text("What should we call you?")
                 .font(.subheadline).foregroundStyle(.secondary)
@@ -213,7 +216,7 @@ struct OnboardingView: View {
                 .accessibilityAddTraits(.updatesFrequently)
         default:
             VStack(alignment: .leading, spacing: 18) {
-                Text("\(name.trimmingCharacters(in: .whitespacesAndNewlines)), let’s make it a habit.")
+                Text(planGreeting)
                     .font(.title3.weight(.regular))
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
@@ -259,7 +262,13 @@ struct OnboardingView: View {
             .padding(16).modifier(LiquidGlassSurface(shape: .rounded(20)))
     }
 
+    private var planGreeting: String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "Let’s make it a habit." : "\(trimmed), let’s make it a habit."
+    }
+
     private func advance() async {
+        let step = currentStep
         if step == 7 {
             if subscriptions.isPro { completed = true } else { showingPro = true }
             return
@@ -267,7 +276,7 @@ struct OnboardingView: View {
         guard step != 6 else { return }
         if step == 5 {
             if health.available { await health.connect() }
-            withAnimation(reduceMotion ? nil : .easeInOut) { step = 6 }
+            withAnimation(reduceMotion ? nil : .easeInOut) { self.step = 6 }
             return
         }
         guard step != 0 || !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
@@ -276,10 +285,11 @@ struct OnboardingView: View {
             if step == 3 {
                 goal = Double(HydrationGoalCalculator.dailyGoalML(weightPounds: Double(weight), workoutsPerWeek: workouts, workoutMinutes: workoutMinutes))
             }
-            step += 1
+            self.step = step + 1
             return
         }
-        store.displayName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedName.isEmpty { store.displayName = trimmedName }
         savedAge = age
         savedHeight = height
         savedWeight = weight
@@ -293,7 +303,7 @@ struct OnboardingView: View {
         } else {
             store.bottle = nil
         }
-        step = 5
+        self.step = 5
     }
 }
 

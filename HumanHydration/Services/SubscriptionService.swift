@@ -38,28 +38,42 @@ final class SubscriptionService: ObservableObject {
         for await result in StoreKit.Transaction.updates {
             guard !Task.isCancelled, auth.user?.id == accountID else { return }
             do { try await sync(result, auth: auth) }
-            catch { message = "Your purchase is waiting to sync. Restore purchases to try again." }
+            catch is CancellationError { return }
+            catch {
+                if case .verified(let transaction) = result, Self.productIDs.contains(transaction.productID), transaction.appAccountToken == accountID {
+                    message = "Your purchase is waiting to sync. Restore purchases to try again."
+                }
+            }
         }
     }
 
-    func loadProducts(auth: AuthService) async {
+    func loadProducts(auth: AuthService, reportFailure: Bool = false) async {
+        if message == Self.plansMessage { message = nil }
         isBusy = true
         defer { isBusy = false }
         await refresh(auth: auth)
         do {
-            products = try await Product.products(for: Self.productIDs)
-                .filter { $0.type == .autoRenewable }
-                .sorted { $0.price < $1.price }
-        } catch { message = "The App Store couldn’t load plans. Please try again." }
+            products = try await loadStoreProducts()
+        } catch is CancellationError {
+            return
+        } catch {
+            guard reportFailure, products.isEmpty else { return }
+            message = Self.plansMessage
+        }
     }
 
     func refresh(auth: AuthService) async {
         do { apply(try await request(auth: auth)) }
-        catch { purchasesAvailable = false }
+        catch is CancellationError { return }
+        catch {
+            try? await Task.sleep(for: .milliseconds(600))
+            guard !Task.isCancelled else { return }
+            if let access = try? await request(auth: auth) { apply(access) }
+        }
     }
 
     func purchase(_ product: Product, auth: AuthService) async {
-        guard !isBusy, purchasesAvailable, AppConfig.privacyPolicyURL != nil, Self.productIDs.contains(product.id), auth.user?.id == accountID else { return }
+        guard !isBusy, AppConfig.privacyPolicyURL != nil, Self.productIDs.contains(product.id), auth.user?.id == accountID else { return }
         isBusy = true; message = nil
         defer { isBusy = false }
         do {
@@ -89,12 +103,54 @@ final class SubscriptionService: ObservableObject {
 
     func reconcileCurrent(auth: AuthService) async {
         do { try await syncEntitlements(auth: auth); await refresh(auth: auth) }
-        catch { message = "Your purchase is waiting to sync. Restore purchases to try again." }
+        catch is CancellationError { return }
+        catch SubscriptionError.pendingSync { message = "Your purchase is waiting to sync. Restore purchases to try again." }
+        catch { }
     }
 
     private func syncEntitlements(auth: AuthService) async throws {
-        for await result in StoreKit.Transaction.unfinished { try Task.checkCancellation(); try await sync(result, auth: auth) }
-        for await result in StoreKit.Transaction.currentEntitlements { try Task.checkCancellation(); try await sync(result, auth: auth) }
+        var pendingSync = false
+        for await result in StoreKit.Transaction.unfinished {
+            try Task.checkCancellation()
+            pendingSync = try await syncIfPossible(result, auth: auth) || pendingSync
+        }
+        for await result in StoreKit.Transaction.currentEntitlements {
+            try Task.checkCancellation()
+            pendingSync = try await syncIfPossible(result, auth: auth) || pendingSync
+        }
+        if pendingSync { throw SubscriptionError.pendingSync }
+    }
+
+    private func syncIfPossible(_ result: VerificationResult<StoreKit.Transaction>, auth: AuthService) async throws -> Bool {
+        do {
+            try await sync(result, auth: auth)
+            return false
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            guard case .verified(let transaction) = result,
+                  Self.productIDs.contains(transaction.productID),
+                  transaction.appAccountToken == accountID else { return false }
+            return true
+        }
+    }
+
+    private func loadStoreProducts() async throws -> [Product] {
+        var lastError: Error?
+        for attempt in 0..<3 {
+            try Task.checkCancellation()
+            if attempt > 0 { try await Task.sleep(for: .milliseconds(500 * UInt64(attempt))) }
+            do {
+                return try await Product.products(for: Self.productIDs)
+                    .filter { $0.type == .autoRenewable }
+                    .sorted { $0.price < $1.price }
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                lastError = error
+            }
+        }
+        throw lastError ?? SubscriptionError.unavailable
     }
 
     private func sync(_ result: VerificationResult<StoreKit.Transaction>, auth: AuthService) async throws {
@@ -135,5 +191,6 @@ final class SubscriptionService: ObservableObject {
         guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw SubscriptionError.unavailable }
         return try JSONDecoder().decode(SubscriptionAccess.self, from: data)
     }
-    private enum SubscriptionError: Error { case unverified, unavailable }
+    private static let plansMessage = "The App Store couldn’t load plans. Please try again."
+    private enum SubscriptionError: Error { case unverified, unavailable, pendingSync }
 }

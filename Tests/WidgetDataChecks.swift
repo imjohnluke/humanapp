@@ -18,6 +18,16 @@ enum WidgetDataChecks {
         precondition(data.amount(on: today) == 250, "Removed water is reflected")
         let decoded = try JSONDecoder().decode(HydrationWidgetData.self, from: JSONEncoder().encode(data))
         precondition(decoded.goalML == 2400 && decoded.amount(on: today) == 250)
+        let loggedID = UUID()
+        let logged = HydrationWidgetData(goalML: 2400, drinks: [.init(date: today, amountML: 250, id: loggedID, pendingImport: true)], logAmountML: 300, logName: "Glass")
+        precondition(logged.unknownDrinks(knownIDs: []).map(\.id) == [loggedID])
+        precondition(logged.unknownDrinks(knownIDs: [loggedID]).isEmpty)
+        let published = HydrationWidgetData(goalML: 2400, drinks: [.init(date: today, amountML: 250, id: loggedID)])
+        precondition(published.unknownDrinks(knownIDs: []).isEmpty, "Deleted app entries must not be re-imported from an older widget snapshot")
+        let roundTrip = try JSONDecoder().decode(HydrationWidgetData.self, from: JSONEncoder().encode(logged))
+        precondition(roundTrip.unknownDrinks(knownIDs: []).count == 1, "Pending widget logs survive serialization")
+        let legacy = try JSONDecoder().decode(HydrationWidgetData.self, from: Data("{\"goalML\":1000,\"drinks\":[{\"date\":0,\"amountML\":10}]}".utf8))
+        precondition(legacy.logAmountML == 250 && legacy.logName == "Glass" && legacy.unknownDrinks(knownIDs: []).isEmpty)
         print("Widget data checks passed: day filtering, midnight, removal, encoding.")
     }
 }

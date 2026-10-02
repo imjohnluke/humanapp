@@ -11,6 +11,8 @@ final class HydrationStore: ObservableObject {
     @Published var bottle: WaterBottle? { didSet { save() } }
 
     @Published private(set) var earnedStreakDays: Int
+    @Published var liveIslandEnabled: Bool { didSet { defaults.set(liveIslandEnabled, forKey: "liveIslandEnabled") } }
+    @Published var liveIslandMessage: String?
 
     private let defaults: UserDefaults
     private let accountID: String?
@@ -21,6 +23,7 @@ final class HydrationStore: ObservableObject {
         self.defaults = defaults
         self.accountID = accountID
         widgetAccessEnabled = defaults.bool(forKey: "widgetAccessEnabled") || defaults.bool(forKey: "cachedIsPro")
+        liveIslandEnabled = defaults.bool(forKey: "liveIslandEnabled")
         savedDrinks = ((try? JSONDecoder().decode([SavedDrink].self, from: defaults.data(forKey: "savedDrinks") ?? Data())) ?? [])
             .filter { (40...7570).contains($0.capacityML) && !$0.name.isEmpty }
         selectedDrinkID = defaults.string(forKey: "selectedDrinkID").flatMap(UUID.init(uuidString:))
@@ -28,17 +31,21 @@ final class HydrationStore: ObservableObject {
         let loadedGoal = max(defaults.object(forKey: "dailyGoalML") as? Int ?? HydrationGoalCalculator.gallonML,
                              HydrationGoalCalculator.gallonML)
         let loadedEntries = (try? JSONDecoder().decode([HydrationEntry].self, from: defaults.data(forKey: "entries") ?? Data())) ?? []
+        let loggedAway = widgetAccessEnabled
+            ? (HydrationWidgetData.read()?.unknownDrinks(knownIDs: Set(loadedEntries.map(\.id))) ?? [])
+            : []
+        let mergedEntries = loadedEntries + loggedAway.map { HydrationEntry(amountML: $0.amountML, date: $0.date, id: $0.id ?? UUID()) }
         dailyGoalML = loadedGoal
-        entries = loadedEntries
+        entries = mergedEntries
         bottle = (try? JSONDecoder().decode(WaterBottle.self, from: defaults.data(forKey: "bottle") ?? Data()))
-        earnedStreakDays = max(defaults.integer(forKey: "earnedStreakDays"), HydrationStatistics(entries: loadedEntries, goalML: loadedGoal).bestStreak)
+        earnedStreakDays = max(defaults.integer(forKey: "earnedStreakDays"), HydrationStatistics(entries: mergedEntries, goalML: loadedGoal).bestStreak)
         defaults.set(earnedStreakDays, forKey: "earnedStreakDays")
         if let savedBottle = bottle, BottleCatalog.finish(savedBottle.colorName) == nil {
             bottle?.colorName = "clear"
         }
         // Existing accounts already picked a bottle before usual drinks were introduced.
         if savedDrinks.isEmpty, let bottle { useBottleForLogging(bottle) }
-
+        if !loggedAway.isEmpty { save() }
     }
 
     var todayAmountML: Int {
@@ -102,6 +109,7 @@ final class HydrationStore: ObservableObject {
     private func persistDrinks() {
         defaults.set(try? JSONEncoder().encode(savedDrinks), forKey: "savedDrinks")
         defaults.set(selectedDrinkID?.uuidString, forKey: "selectedDrinkID")
+        publishWidgetData()
     }
 
     /// Correct today's most recent drinks, preserving earlier days and entry identities.
@@ -135,14 +143,33 @@ final class HydrationStore: ObservableObject {
         return earnedStreakDays >= tier.days
     }
 
+    func importWidgetLogs() {
+        guard widgetAccessEnabled, let remote = HydrationWidgetData.read() else { return }
+        if let accountID, let active = UserDefaults.standard.string(forKey: "activeWidgetAccountID"), active != accountID {
+            return
+        }
+        let fresh = remote.unknownDrinks(knownIDs: Set(entries.map(\.id)))
+        guard !fresh.isEmpty else { return }
+        entries.append(contentsOf: fresh.map { HydrationEntry(amountML: $0.amountML, date: $0.date, id: $0.id ?? UUID()) })
+    }
+
     func publishWidgetData() {
         guard widgetAccessEnabled else { return }
         if let accountID, let active = UserDefaults.standard.string(forKey: "activeWidgetAccountID"), active != accountID {
             return
         }
-        HydrationWidgetData(goalML: dailyGoalML, drinks: entries.map {
-            .init(date: $0.date, amountML: $0.amountML)
-        }).save()
+        var drinks = entries.map { HydrationWidgetData.Drink(date: $0.date, amountML: $0.amountML, id: $0.id) }
+        let known = Set(drinks.compactMap(\.id))
+        if let remote = HydrationWidgetData.read() {
+            drinks.append(contentsOf: remote.unknownDrinks(knownIDs: known))
+        }
+        let drink = selectedDrink
+        HydrationWidgetData(
+            goalML: dailyGoalML,
+            drinks: drinks,
+            logAmountML: drink?.capacityML ?? 250,
+            logName: drink.map { BottleCatalog.displayName($0.name) } ?? "Glass"
+        ).save()
     }
 
     func setWidgetAccess(_ enabled: Bool) {
