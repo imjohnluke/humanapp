@@ -112,7 +112,6 @@ struct HydrationLiveActivityWidget: Widget {
                         }
                         Button(intent: LogWaterIntent(amountML: context.state.logAmountML)) {
                             VStack(spacing: 2) {
-                                Image(systemName: "drop.fill")
                                 Text("Log")
                                     .font(.caption.weight(.semibold))
                                 Text(WaterVolume.label(context.state.logAmountML))
@@ -158,7 +157,6 @@ private struct HydrationLiveBanner: View {
             }
             Button(intent: LogWaterIntent(amountML: state.logAmountML)) {
                 VStack(spacing: 2) {
-                    Image(systemName: "drop.fill")
                     Text("Log \(WaterVolume.label(state.logAmountML))")
                         .font(.caption.weight(.semibold))
                         .lineLimit(1)
