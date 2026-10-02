@@ -27,7 +27,7 @@ struct ProSubscriptionSheet: View {
                     if subscriptions.isPro {
                         Label("Your Pro access is active", systemImage: "checkmark.circle.fill").foregroundStyle(.blue)
                         Button("Manage Apple subscription") { showingManage = true }
-                    } else if subscriptions.purchasesAvailable && AppConfig.privacyPolicyURL != nil && !subscriptions.products.isEmpty {
+                    } else if AppConfig.privacyPolicyURL != nil && !subscriptions.products.isEmpty {
                         ForEach(subscriptions.products, id: \.id) { product in
                             Button { Task { await subscriptions.purchase(product, auth: auth) } } label: {
                                 HStack {
@@ -42,10 +42,12 @@ struct ProSubscriptionSheet: View {
                                 .disabled(subscriptions.isBusy)
                         }
                     } else if !subscriptions.isBusy {
-                        Text("Pro subscriptions are getting ready. Purchasing isn’t available yet.").foregroundStyle(.secondary)
-                        Button("Check subscription again") { Task { await subscriptions.loadProducts(auth: auth) } }
+                        if subscriptions.message == nil {
+                            Text("Pro subscriptions are getting ready. Purchasing isn’t available yet.").foregroundStyle(.secondary)
+                        }
+                        Button("Check subscription again") { Task { await subscriptions.loadProducts(auth: auth, reportFailure: true) } }
                     }
-                    if subscriptions.purchasesAvailable && AppConfig.privacyPolicyURL != nil && !subscriptions.products.isEmpty && !subscriptions.isPro {
+                    if AppConfig.privacyPolicyURL != nil && !subscriptions.products.isEmpty && !subscriptions.isPro {
                         Text("Monthly subscription. Payment is charged to your Apple Account. Renews automatically unless canceled at least 24 hours before renewal. Manage or cancel in Settings.")
                             .font(.caption).foregroundStyle(.secondary)
                     }

@@ -36,6 +36,7 @@ private struct AccountContentView: View {
     @StateObject private var subscriptions: SubscriptionService
     @StateObject private var store: HydrationStore
     @StateObject private var health: HealthKitService
+    @State private var widgetLogs = WidgetLogObserver()
     private let defaults: UserDefaults
     init(user: AuthUser) {
         let defaults = AccountStorage.defaults(for: user.id)
@@ -51,15 +52,94 @@ private struct AccountContentView: View {
             .task { await health.refresh() }
             .task { await subscriptions.listen(auth: auth) }
             .onChange(of: subscriptions.didApplyEntitlements) { _, applied in
-                if applied { store.setWidgetAccess(subscriptions.isPro) }
+                if applied {
+                    store.setWidgetAccess(subscriptions.isPro)
+                    syncIsland()
+                }
             }
             .onChange(of: subscriptions.isPro) { _, isPro in
-                if subscriptions.didApplyEntitlements { store.setWidgetAccess(isPro) }
+                if subscriptions.didApplyEntitlements {
+                    store.setWidgetAccess(isPro)
+                    syncIsland()
+                }
             }
+            .onChange(of: store.liveIslandEnabled) { _, _ in syncIsland() }
+            .onChange(of: store.todayAmountML) { _, _ in syncIsland() }
+            .onChange(of: store.dailyGoalML) { _, _ in syncIsland() }
+            .onChange(of: store.selectedDrinkID) { _, _ in syncIsland() }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { Task { await subscriptions.reconcileCurrent(auth: auth); await health.refresh() } }
+                if phase == .active {
+                    store.importWidgetLogs()
+                    syncIsland()
+                    Task { await subscriptions.reconcileCurrent(auth: auth); await health.refresh() }
+                }
             }
-            .onDisappear { ReminderService().cancel() }
+            .onAppear {
+                widgetLogs.onLog = { store.importWidgetLogs() }
+                widgetLogs.start()
+            }
+            .onDisappear {
+                widgetLogs.stop()
+                ReminderService().cancel()
+                Task { await HydrationActivityCenter.end() }
+            }
+    }
+
+    private func syncIsland() {
+        let enabled = store.liveIslandEnabled && subscriptions.isPro
+        let amount = store.todayAmountML
+        let goal = store.dailyGoalML
+        let logAmount = store.selectedDrink?.capacityML ?? 250
+        let logName = store.selectedDrink.map { BottleCatalog.displayName($0.name) } ?? "Glass"
+        Task {
+            let ok = await HydrationActivityCenter.apply(
+                enabled: enabled,
+                amountML: amount,
+                goalML: goal,
+                logAmountML: logAmount,
+                logName: logName
+            )
+            guard store.liveIslandEnabled else { return }
+            if enabled && !ok {
+                store.liveIslandMessage = "Turn on Live Activities for Human Hydration in iPhone Settings."
+                store.liveIslandEnabled = false
+            } else if ok {
+                store.liveIslandMessage = nil
+            }
+        }
+    }
+}
+
+private final class WidgetLogObserver {
+    var onLog: (@MainActor () -> Void)?
+    private var started = false
+
+    func start() {
+        guard !started else { return }
+        started = true
+        CFNotificationCenterAddObserver(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            Unmanaged.passUnretained(self).toOpaque(),
+            { _, observer, _, _, _ in
+                guard let observer else { return }
+                let box = Unmanaged<WidgetLogObserver>.fromOpaque(observer).takeUnretainedValue()
+                Task { @MainActor in box.onLog?() }
+            },
+            HydrationWidgetData.logPing,
+            nil,
+            .deliverImmediately
+        )
+    }
+
+    func stop() {
+        guard started else { return }
+        started = false
+        CFNotificationCenterRemoveObserver(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            Unmanaged.passUnretained(self).toOpaque(),
+            CFNotificationName(HydrationWidgetData.logPing),
+            nil
+        )
     }
 }
 
@@ -176,7 +256,8 @@ private struct SignInView: View {
                                 auth.errorMessage = "Apple didn’t return a valid sign-in token. Please try again."
                                 return
                             }
-                            Task { await auth.signInWithApple(idToken: token, nonce: nonce) }
+                            let fullName = Self.appleDisplayName(credential.fullName)
+                            Task { await auth.signInWithApple(idToken: token, nonce: nonce, fullName: fullName) }
                         case .failure(let error):
                             if (error as? ASAuthorizationError)?.code != .canceled {
                                 auth.errorMessage = error.localizedDescription
@@ -350,6 +431,14 @@ private struct SignInView: View {
             emailStep = .password
             focusedField = .password
         }
+    }
+
+    private static func appleDisplayName(_ components: PersonNameComponents?) -> String? {
+        guard let components else { return nil }
+        let formatter = PersonNameComponentsFormatter()
+        formatter.style = .default
+        let name = formatter.string(from: components).trimmingCharacters(in: .whitespacesAndNewlines)
+        return name.isEmpty ? nil : name
     }
 
     private var buttonTitle: String {

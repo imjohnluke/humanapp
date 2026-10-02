@@ -98,21 +98,38 @@ enum AuthChecks {
         // Apple ID-token login must verify the returned identity before saving a session.
         AuthMockProtocol.handler = { request in
             if request.url!.path == "/auth/v1/user" { return (200, userJSON(userA)) }
+            if request.url!.path == "/auth/v1/logout" { return (204, "") }
             precondition(request.url!.query == "grant_type=id_token")
             return (200, tokenJSON(userA))
         }
         let apple = makeAuth()
-        await apple.signInWithApple(idToken: "mock-apple-token", nonce: "mock-nonce")
+        await apple.signInWithApple(idToken: "mock-apple-token", nonce: "mock-nonce", fullName: "  Jane Appleseed  ")
+        let appleDefaults = AccountStorage.defaults(for: userA)
         precondition(apple.user?.id == userA && vault.value != nil && !apple.isLoading)
+        precondition(appleDefaults.bool(forKey: "signedInWithApple"))
+        precondition(appleDefaults.string(forKey: "displayName") == "Jane Appleseed", "Apple’s name is saved and not requested again")
+        apple.signOut()
+        try await Task.sleep(nanoseconds: 100_000_000)
+        await apple.signInWithApple(idToken: "mock-apple-token", nonce: "mock-nonce", fullName: "Someone Else")
+        precondition(apple.user?.id == userA)
+        precondition(appleDefaults.string(forKey: "displayName") == "Jane Appleseed", "A later Apple sign-in must not replace the saved name")
+        apple.signOut()
+        try await Task.sleep(nanoseconds: 100_000_000)
+        await apple.signInWithApple(idToken: "mock-apple-token", nonce: "mock-nonce", fullName: "   ")
+        precondition(apple.user?.id == userA && appleDefaults.bool(forKey: "signedInWithApple"))
+        precondition(appleDefaults.string(forKey: "displayName") == "Jane Appleseed", "A blank Apple name must not clear the saved name")
         vault.clear()
+        apple.signOut()
+        try await Task.sleep(nanoseconds: 100_000_000)
 
         AuthMockProtocol.handler = { request in
             if request.url!.path == "/auth/v1/user" { return (200, userJSON(userB)) }
             return (200, tokenJSON(userA))
         }
         let appleMismatch = makeAuth()
-        await appleMismatch.signInWithApple(idToken: "mock-apple-token", nonce: "mock-nonce")
+        await appleMismatch.signInWithApple(idToken: "mock-apple-token", nonce: "mock-nonce", fullName: "Mismatch")
         precondition(!appleMismatch.isAuthenticated && vault.value == nil && !appleMismatch.isLoading)
+        precondition(!AccountStorage.defaults(for: userB).bool(forKey: "signedInWithApple"), "A rejected Apple identity must not save a name")
 
         AuthMockProtocol.handler = { _ in (400, "{\"msg\":\"Invalid Apple token\"}") }
         let appleRejected = makeAuth()
